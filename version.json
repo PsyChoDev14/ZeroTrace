@@ -1,8 +1,8 @@
 {
-  "versionCode": 3,
-  "versionName": "1.0.2",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.2/ZeroTrace-v1.0.2-arm64.apk",
-  "changelog": "\u2022 In-App OTA Auto-Updater Live Test!\n\u2022 Share Config via QR Code feature\n\u2022 Camera QR Scanner & BBR speed optimizations\n\u2022 Performance and stability enhancements",
+  "versionCode": 4,
+  "versionName": "1.0.3",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.3/ZeroTrace-v1.0.3-arm64.apk",
+  "changelog": "\u2022 25% Smaller APK size (57 MB optimized)\n\u2022 MTU 1400 zero-fragmentation for Dialog/Mobitel/SLT 4G/5G\n\u2022 2048 KB high-throughput buffer for faster streaming\n\u2022 Lower ping & improved network stability",
   "forceUpdate": false,
   "releaseDate": "2026-08-29",
   "minSupportedVersion": 1
