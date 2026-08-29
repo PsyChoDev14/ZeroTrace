@@ -73,7 +73,15 @@ fun ConfigsScreen(
     modifier: Modifier = Modifier
 ) {
     var configToDelete by remember { mutableStateOf<ProxyConfig?>(null) }
+    var configToShare by remember { mutableStateOf<ProxyConfig?>(null) }
     val activeConfig = configs.find { it.id == selectedConfigId }
+
+    if (configToShare != null) {
+        lk.novalink.zerotrace.ui.components.ShareConfigDialog(
+            config = configToShare!!,
+            onDismiss = { configToShare = null }
+        )
+    }
 
     Scaffold(
         containerColor = ZtBg,
@@ -225,6 +233,7 @@ fun ConfigsScreen(
                             isSelected = config.id == selectedConfigId,
                             onSelect = { onSelectConfig(config.id) },
                             onEdit = { onEditConfig(config) },
+                            onShare = { configToShare = config },
                             onPingTest = { onPingTest(config) },
                             onDelete = { configToDelete = config }
                         )

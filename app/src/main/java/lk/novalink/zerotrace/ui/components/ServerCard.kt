@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -61,6 +62,7 @@ fun ServerCard(
     isSelected: Boolean,
     onSelect: () -> Unit,
     onEdit: (() -> Unit)? = null,
+    onShare: (() -> Unit)? = null,
     onPingTest: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -152,6 +154,20 @@ fun ServerCard(
 
                 // Load bars (Matches LoadBars in ServerRow.tsx)
                 LoadBars(pingMs = config.pingMs)
+
+                if (onShare != null) {
+                    IconButton(
+                        onClick = onShare,
+                        modifier = Modifier.size(30.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QrCode,
+                            contentDescription = "Share Config QR",
+                            tint = ZtAccent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
 
                 if (onEdit != null) {
                     IconButton(

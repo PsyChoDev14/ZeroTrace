@@ -90,6 +90,7 @@ dependencies {
     implementation("androidx.camera:camera-view:1.3.4")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.google.guava:guava:31.1-android")
+    implementation("com.google.zxing:core:3.5.3")
 
     // Testing
     testImplementation(libs.junit)
