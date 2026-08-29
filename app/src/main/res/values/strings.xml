@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ZeroTrace</string>
+    <string name="app_tagline">NovaLink LK • Powered by Nexaura Core</string>
+    <string name="brand_name">NovaLink LK</string>
+    <string name="company_name">Nexaura Core</string>
+    <string name="vpn_service_description">ZeroTrace VPN Tunnel Service provides secure and encrypted proxy routing for NovaLink LK.</string>
+    <string name="channel_name">VPN Connection Status</string>
+    <string name="channel_description">Shows continuous connection status and traffic stats for ZeroTrace VPN</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_stopping">Stopping…</string>
+    <string name="status_error">Connection Error</string>
+</resources>

@@ -1,0 +1,15 @@
+package hev.sockstun;
+
+public class TProxyService {
+    public static native void TProxyStartService(String config_path, int fd);
+    public static native void TProxyStopService();
+    public static native long[] TProxyGetStats();
+
+    static {
+        try {
+            System.loadLibrary("hev-socks5-tunnel");
+        } catch (UnsatisfiedLinkError e) {
+            e.printStackTrace();
+        }
+    }
+}

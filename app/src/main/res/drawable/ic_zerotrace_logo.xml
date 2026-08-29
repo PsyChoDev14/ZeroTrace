@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <!-- Shield Outline with Glowing Gradient -->
+    <path
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M32,6 L52,15 L52,36 C52,48 42,58 32,62 C22,58 12,48 12,36 L12,15 Z">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:startX="12"
+                android:startY="6"
+                android:endX="52"
+                android:endY="62"
+                android:type="linear">
+                <item android:color="#00E5FF" android:offset="0.0" />
+                <item android:color="#7C4DFF" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Core Bolt / Pulse -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M32,20 L42,30 L35,30 L38,44 L25,33 L31,33 Z" />
+</vector>

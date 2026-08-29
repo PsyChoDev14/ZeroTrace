@@ -1,0 +1,70 @@
+name: Build & Release ZeroTrace Auto-Updater
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version Name (e.g. 1.0.1)'
+        required: true
+        default: '1.0.1'
+      changelog:
+        description: 'Changelog / Release Notes'
+        required: false
+        default: 'Performance improvements and bug fixes'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build APK (ABI Splits)
+        run: ./gradlew assembleRelease || ./gradlew assembleDebug
+
+      - name: Extract Built APK
+        run: |
+          mkdir -p dist
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="v${{ github.event.inputs.version_name }}"
+          fi
+          
+          # Find arm64 or debug apk
+          APK_PATH=$(find app/build/outputs/apk -name "*arm64*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          fi
+          
+          cp "$APK_PATH" "dist/ZeroTrace-${VERSION}-arm64.apk"
+          echo "APK_FILE=dist/ZeroTrace-${VERSION}-arm64.apk" >> $GITHUB_ENV
+          echo "VERSION_TAG=$VERSION" >> $GITHUB_ENV
+
+      - name: Create GitHub Release & Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.APK_FILE }}
+          tag_name: ${{ env.VERSION_TAG }}
+          name: ZeroTrace ${{ env.VERSION_TAG }}
+          body: |
+            ${{ github.event.inputs.changelog || '🚀 New release of ZeroTrace VPN with optimized VLESS performance and bug fixes.' }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

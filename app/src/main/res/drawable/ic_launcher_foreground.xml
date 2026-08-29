@@ -1,0 +1,47 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.58"
+        android:scaleY="0.58"
+        android:translateX="22.68"
+        android:translateY="22.68">
+        <!-- Shield Background Outline -->
+        <path
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M54,12 L86,26 L86,58 C86,76 72,92 54,98 C36,92 22,76 22,58 L22,26 Z">
+            <aapt:attr name="android:strokeColor">
+                <gradient
+                    android:startX="22"
+                    android:startY="12"
+                    android:endX="86"
+                    android:endY="98"
+                    android:type="linear">
+                    <item android:color="#00E5FF" android:offset="0.0" />
+                    <item android:color="#7C4DFF" android:offset="1.0" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Inner Cyber Pulse Core -->
+        <path
+            android:fillColor="#00E5FF"
+            android:pathData="M54,34 L68,48 L58,48 L62,68 L44,52 L52,52 Z" />
+            
+        <!-- Glowing Nodes -->
+        <path
+            android:fillColor="#7C4DFF"
+            android:pathData="M54,24 A4,4 0 1,0 54,32 A4,4 0 1,0 54,24 Z" />
+        <path
+            android:fillColor="#00E5FF"
+            android:pathData="M76,52 A3,3 0 1,0 76,58 A3,3 0 1,0 76,52 Z" />
+        <path
+            android:fillColor="#00E5FF"
+            android:pathData="M32,52 A3,3 0 1,0 32,58 A3,3 0 1,0 32,52 Z" />
+    </group>
+</vector>
