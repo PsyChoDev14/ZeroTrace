@@ -95,21 +95,18 @@ class ZeroTraceVpnService : VpnService() {
             startForeground(NOTIFICATION_ID, buildNotification("Connecting to ${config.name}..."))
             VpnTunnelManager.updateState(VpnState.Connecting)
 
-            // Configure High-Performance TUN Interface
+            // Configure High-Performance TUN Interface (MTU 1400 for zero 4G/5G carrier fragmentation)
             val builder = Builder()
                 .setSession("ZeroTrace - ${config.name}")
-                .setMtu(1500)
+                .setMtu(1400)
                 .addAddress("10.233.233.2", 24)
                 .addDnsServer(primaryDns)
                 .addDnsServer("8.8.8.8")
                 .addRoute("0.0.0.0", 0)
 
-            // Disallow self app to prevent infinite proxy loop
-            try {
-                builder.addDisallowedApplication(packageName)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            // Note: We do NOT disallow self package so that in-app update downloads,
+            // speedtests, and API calls route through the encrypted VPN tunnel
+            // (Socket loops are prevented at the kernel level via vpnService.protect(fd)).
 
             vpnInterface = builder.establish()
 

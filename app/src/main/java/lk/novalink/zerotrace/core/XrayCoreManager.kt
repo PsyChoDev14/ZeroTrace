@@ -97,7 +97,7 @@ object XrayCoreManager {
             val tunYaml = """
                 tunnel:
                   name: tun0
-                  mtu: 1500
+                  mtu: 1400
                   multi-queue: true
                   ipv4: 10.233.233.2
 

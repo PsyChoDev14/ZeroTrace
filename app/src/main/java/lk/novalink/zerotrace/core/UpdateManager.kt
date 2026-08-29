@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import lk.novalink.zerotrace.data.model.AppUpdateInfo
 import lk.novalink.zerotrace.data.model.UpdateState
@@ -19,16 +20,20 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.coroutines.coroutineContext
 
 object UpdateManager {
 
     private const val TAG = "ZeroTrace-Update"
     
-    // Default GitHub raw / Server endpoint where version.json is hosted
+    // Default GitHub raw endpoint where version.json is hosted
     const val DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/PsyChoDev14/ZeroTrace/main/version.json"
 
     private val _updateState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
+
+    @Volatile
+    private var isCancelled = false
 
     private val gson = Gson()
 
@@ -109,6 +114,8 @@ object UpdateManager {
         context: Context,
         updateInfo: AppUpdateInfo
     ): File? = withContext(Dispatchers.IO) {
+        isCancelled = false
+        var apkFile: File? = null
         try {
             _updateState.value = UpdateState.Downloading(
                 updateInfo = updateInfo,
@@ -132,15 +139,15 @@ object UpdateManager {
 
             val totalBytes = connection.contentLengthLong
             val updateDir = File(context.cacheDir, "updates").apply { if (!exists()) mkdirs() }
-            val apkFile = File(updateDir, "ZeroTrace-v${updateInfo.versionName}.apk")
+            apkFile = File(updateDir, "ZeroTrace-v${updateInfo.versionName}.apk")
 
             connection.inputStream.use { input ->
                 FileOutputStream(apkFile).use { output ->
-                    val buffer = ByteArray(8 * 1024)
-                    var bytesRead: Int
+                    val buffer = ByteArray(64 * 1024) // 64 KB high-throughput streaming buffer
+                    var bytesRead = 0
                     var totalRead = 0L
 
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                    while (coroutineContext.isActive && !isCancelled && input.read(buffer).also { bytesRead = it } != -1) {
                         output.write(buffer, 0, bytesRead)
                         totalRead += bytesRead
 
@@ -155,14 +162,30 @@ object UpdateManager {
                 }
             }
 
+            if (isCancelled || !coroutineContext.isActive) {
+                apkFile.delete()
+                _updateState.value = UpdateState.Idle
+                return@withContext null
+            }
+
             _updateState.value = UpdateState.ReadyToInstall(updateInfo, apkFile)
             return@withContext apkFile
 
         } catch (e: Exception) {
+            if (isCancelled) {
+                apkFile?.delete()
+                _updateState.value = UpdateState.Idle
+                return@withContext null
+            }
             Log.e(TAG, "Error downloading update APK", e)
             _updateState.value = UpdateState.Error(e.localizedMessage ?: "Download failed")
             return@withContext null
         }
+    }
+
+    fun cancelDownload() {
+        isCancelled = true
+        _updateState.value = UpdateState.Idle
     }
 
     fun installApk(context: Context, apkFile: File) {

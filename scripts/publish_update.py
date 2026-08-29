@@ -261,12 +261,12 @@ def main():
     print(f"      {GREEN}Updated version.json successfully.{RESET}")
 
     # 3. Build APK
-    print(f"\n[3/6] 🔨 Compiling APK with Gradle...")
+    print(f"\n[3/6] 🔨 Compiling Optimized Release APK with R8...")
     DIST_DIR.mkdir(exist_ok=True)
-    run_cmd("./gradlew --no-daemon assembleDebug")
+    run_cmd("./gradlew --no-daemon assembleRelease")
 
     # Copy output APK to dist/
-    src_apk = PROJECT_ROOT / "app" / "build" / "outputs" / "apk" / "debug" / "app-arm64-v8a-debug.apk"
+    src_apk = PROJECT_ROOT / "app" / "build" / "outputs" / "apk" / "release" / "app-arm64-v8a-release.apk"
     dest_apk = DIST_DIR / apk_filename
 
     if src_apk.exists():

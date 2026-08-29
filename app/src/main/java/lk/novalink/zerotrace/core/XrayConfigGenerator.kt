@@ -41,7 +41,7 @@ object XrayConfigGenerator {
                     addProperty("downlinkOnly", 5)
                     addProperty("statsUserUplink", false)
                     addProperty("statsUserDownlink", false)
-                    addProperty("bufferSize", 1024) // 1024 KB buffer per connection for gigabit throughput
+                    addProperty("bufferSize", 2048) // 2048 KB buffer per connection for gigabit throughput
                 }
                 add("0", level0)
             }
@@ -349,7 +349,7 @@ object XrayConfigGenerator {
             addProperty("tcpNoDelay", true) // Disable Nagle's algorithm for minimum latency/ping
             addProperty("tcpKeepAlivePeriod", 15) // Keep connections alive without stalling
             addProperty("tcpCongestion", "bbr") // BBR bottleneck bandwidth & RTT congestion algorithm
-            addProperty("tcpMaxSeg", 1440) // Ideal TCP Maximum Segment Size for MTU 1500
+            addProperty("tcpMaxSeg", 1360) // Ideal TCP Maximum Segment Size for MTU 1400 (Zero carrier GTP fragmentation)
         }
     }
 }
