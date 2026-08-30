@@ -11,7 +11,7 @@
 
 <br/>
 
-[📥 **Download Latest APK (v1.0.6)**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest/download/ZeroTrace-v1.0.6-arm64.apk) • [📊 **Live Analytics**](#-live-analytics--monitoring) • [✨ **Features**](#-key-features) • [🚀 **Getting Started**](#-getting-started)
+[📥 **Download Latest APK (v1.0.6)**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest/download/ZeroTrace-v1.0.6-arm64.apk) • [✨ **Features**](#-key-features) • [🚀 **Getting Started**](#-getting-started) • [💻 **Tech Stack**](#-tech-stack--architecture)
 
 ---
 
@@ -93,21 +93,6 @@ ZeroTrace supports three fast ways to import servers:
 ### 3. Connect!
 * Tap the glowing central **Connect** button on the Home screen.
 * Watch real-time Download/Upload speed meters and ping latency respond live!
-
----
-
-## 📊 Live Analytics & Monitoring
-
-Track live APK downloads and active telemetry with our built-in tools:
-
-### Terminal CLI Monitor
-```bash
-./analytics.sh
-```
-*Displays total downloads, release breakdown, file sizes, and release dates in real-time.*
-
-### Web Dashboard
-Open [`dashboard/index.html`](dashboard/index.html) in your browser for a responsive cyberpunk analytics dashboard with live counters.
 
 ---
 

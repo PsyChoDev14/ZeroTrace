@@ -1,11 +1,13 @@
 /**
  * ZeroTrace VPN - Telemetry & Analytics Cloudflare Worker
- * 100% Free Serverless Endpoint for Tracking Live Connected Users, DAU & Downloads.
+ * 100% Free Serverless Endpoint with Private Authenticated Admin Stats.
  *
- * Deploy to Cloudflare Workers in 30 seconds:
+ * Deploy to Cloudflare Workers:
  * 1. Go to dash.cloudflare.com -> Workers & Pages -> Create Worker
- * 2. Paste this code into the editor & click Save and Deploy!
- * 3. (Optional) Bind a KV namespace named 'STATS_KV' for permanent persistent counts.
+ * 2. Paste this code into the editor
+ * 3. In Settings -> Variables, add an Environment Variable or Secret:
+ *    ADMIN_SECRET = "your_secure_password_or_key_here"
+ * 4. (Optional) Bind a KV namespace named 'STATS_KV' for persistent counts.
  */
 
 export default {
@@ -14,14 +16,14 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, User-Agent',
+      'Access-Control-Allow-Headers': 'Content-Type, User-Agent, Authorization, x-admin-key',
     };
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 1. Heartbeat Ping Endpoint from ZeroTrace Android App
+    // 1. Anonymous Heartbeat Ping Endpoint from ZeroTrace Android App
     if (url.pathname === '/api/heartbeat' && request.method === 'POST') {
       try {
         const body = await request.json();
@@ -50,8 +52,22 @@ export default {
       }
     }
 
-    // 2. Telemetry Stats API
+    // 2. Private Authenticated Telemetry Stats API
     if (url.pathname === '/api/stats') {
+      const authHeader = request.headers.get('x-admin-key') || request.headers.get('Authorization') || url.searchParams.get('key');
+      const expectedSecret = env.ADMIN_SECRET || 'zerotrace_admin_secret_2026';
+
+      // Verify Admin Authentication
+      if (!authHeader || (authHeader !== expectedSecret && authHeader !== `Bearer ${expectedSecret}`)) {
+        return new Response(JSON.stringify({
+          error: 'Unauthorized',
+          message: 'Access Denied: Private Admin Analytics'
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       let liveUsers = 0;
       let todayUsers = 0;
       let totalConns = 0;
@@ -79,7 +95,7 @@ export default {
     return new Response(JSON.stringify({
       app: 'ZeroTrace Telemetry Engine',
       status: 'online',
-      version: '1.0.4'
+      version: '1.0.6'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

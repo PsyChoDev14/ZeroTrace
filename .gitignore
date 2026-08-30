@@ -22,3 +22,9 @@ local.properties
 .github_token
 .env
 *.token
+*.secret
+
+# Private Admin Dashboard
+dashboard/
+analytics.sh
+
