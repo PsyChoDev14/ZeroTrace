@@ -1,9 +1,9 @@
 {
-  "versionCode": 1,
-  "versionName": "1.0.0",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.0/ZeroTrace-v1.0.0-arm64.apk",
-  "changelog": "• Initial Beta Release\n• High-speed VLESS over TLS/Reality support\n• SNI Bug Host presets for Sri Lanka packages\n• In-app OTA auto-updater support",
+  "versionCode": 6,
+  "versionName": "1.0.5",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.5/ZeroTrace-v1.0.5-arm64.apk",
+  "changelog": "\u2022 Android Quick Settings Tile (1-tap connect/disconnect from status bar)\n\u2022 Live server name displayed in notification panel\n\u2022 Updates download over active VPN (Zero-Data support)\n\u2022 Interactive categorized changelog with glowing badges\n\u2022 Active Cancel Download button support",
   "forceUpdate": false,
-  "releaseDate": "2026-08-28",
+  "releaseDate": "2026-08-30",
   "minSupportedVersion": 1
 }
