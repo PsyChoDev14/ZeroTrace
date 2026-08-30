@@ -1,8 +1,8 @@
 {
-  "versionCode": 7,
-  "versionName": "1.0.6",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.6/ZeroTrace-v1.0.6-arm64.apk",
-  "changelog": "\u2022 Per-App Split Tunneling (Bypass Banking apps, PickMe, Uber, Daraz)\n\u2022 Built-in AdGuard Ad-Blocker DNS (Phone-wide popup & ad blocking)\n\u2022 Android Quick Settings Tile (1-tap connect from notification bar)\n\u2022 Interactive In-App Quick Settings Tile Guide\n\u2022 Updates download smoothly over active VPN tunnel",
+  "versionCode": 8,
+  "versionName": "1.0.7",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.7/ZeroTrace-v1.0.7-arm64.apk",
+  "changelog": "\u2022 Biometric App Lock: Secure app with Fingerprint, Face ID & PIN\n\u2022 Auto-relock on app backgrounding & switching\n\u2022 DNS resolver optimization & AdGuard leak prevention\n\u2022 Per-App Split Tunneling (Bypass Banking apps, PickMe, Uber)\n\u2022 Quick Settings Notification Tile with in-app 1-tap guide",
   "forceUpdate": false,
   "releaseDate": "2026-08-30",
   "minSupportedVersion": 1
