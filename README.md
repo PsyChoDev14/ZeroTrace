@@ -1,109 +1,193 @@
-# ZeroTrace - Android Xray VPN Client
-**NovaLink LK** • Engineered by **Nexaura Core**
+<div align="center">
 
-ZeroTrace is a modern, high-performance Android VPN client crafted for NovaLink LK customers. It enables users to paste, save, select, and connect their Xray configurations (`vless://`, `vmess://`, `trojan://`, `ss://`, or raw JSON).
+# ⚡ ZeroTrace VPN
+### *Ultra-Fast • Anti-Censorship • Privacy-First Android Xray Client*
 
----
+[![Latest Release](https://img.shields.io/github/v/release/PsyChoDev14/ZeroTrace?color=5468FF&label=Release&logo=github&style=for-the-badge)](https://github.com/PsyChoDev14/ZeroTrace/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2024--34)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/PsyChoDev14/ZeroTrace)
+[![Core Engine](https://img.shields.io/badge/Engine-Xray--Core%20v1.8.11-7C4DFF?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/XTLS/Xray-core)
+[![License](https://img.shields.io/badge/License-MIT-FFA502?style=for-the-badge)](LICENSE)
+[![Status](https://img.shields.io/badge/Build-Passing%20(R8%20Optimized)-35C77B?style=for-the-badge&logo=checkmarx)](https://github.com/PsyChoDev14/ZeroTrace/releases)
 
-## Key Features
+<br/>
 
-- **Multi-Protocol Support**:
-  - **VLESS**: Reality, Vision (`xtls-rprx-vision`), WebSocket, gRPC, TCP, TLS.
-  - **VMess**: Standard Base64 JSON configurations (WS, TCP, TLS).
-  - **Trojan**: TLS, gRPC, WebSocket.
-  - **Shadowsocks**: Standard SIP002 & 2022 encryption methods.
-  - **Custom JSON**: Full custom Xray-Core JSON config strings.
-- **One-Tap Paste & Save**:
-  - Instant clipboard auto-detection.
-  - Automatic parameter extraction (SNI, Bug Host, Reality Public Key, Short ID, Path).
-  - Custom naming and persistent local storage.
-- **VPN Core & Routing**:
-  - Android `VpnService` TUN integration (`10.233.233.2/24`, `1.1.1.1` DNS).
-  - Bypass LAN / Local IP subnet routing.
-  - Primary DNS selector (Cloudflare, Google, AdGuard Ad-blocking, Quad9).
-- **Branded Modern UI (Jetpack Compose)**:
-  - Dark Cyberpunk theme with animated glowing Connect button.
-  - Real-time download/upload traffic telemetry.
-  - Live TCP Ping latency tester for all nodes.
-- **Customer Support Integration**:
-  - One-tap access to NovaLink LK Telegram & WhatsApp technical support channels.
+[📥 **Download Latest APK (v1.0.6)**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest/download/ZeroTrace-v1.0.6-arm64.apk) • [📊 **Live Analytics**](#-live-analytics--monitoring) • [✨ **Features**](#-key-features) • [🚀 **Getting Started**](#-getting-started)
 
 ---
 
-## Project Structure
+</div>
 
+## 🌟 Overview
+
+**ZeroTrace** is a next-generation, high-performance Android VPN and proxy client powered by **Xray-Core** and native **tun2socks** bridging. Engineered from the ground up with **Jetpack Compose** and **Kotlin Coroutines**, ZeroTrace delivers unmatched connection speed, anti-censorship DPI bypassing (VLESS Reality), per-app split tunneling, phone-wide ad-blocking, and seamless background OTA auto-updates.
+
+---
+
+## ✨ Key Features
+
+### 🛡️ 1. Advanced Anti-Censorship & Encryption
+* **VLESS XTLS Reality & Vision:** Eliminates traditional VPN signatures. Traffic is indistinguishable from standard TLS connections to foreign CDN domains (Apple, Microsoft, Cloudflare).
+* **Deep Packet Inspection (DPI) Resistance:** Resists active probing and throttling on restricted mobile carriers (Dialog, Mobitel, SLT, Airtel).
+* **Multi-Protocol Powerhouse:** Full support for `VLESS`, `VMess`, `Trojan`, `Shadowsocks (2022/SIP002)`, and raw custom `Xray JSON`.
+
+### 🔀 2. Per-App Split Tunneling
+* **Bypass Mode (Recommended):** Route sensitive local apps (*Commercial Bank, BOC, Sampath, HNB, PickMe, Uber, Daraz, Dialog MyAccount*) directly through your regular ISP while the rest of your device stays protected under the VPN.
+* **VPN-Only Mode:** Restrict VPN tunneling strictly to selected apps (e.g., YouTube, Telegram, Zoom, Chrome).
+* **Smart Local App Detection:** Automatically highlights Sri Lankan banking and delivery apps with `🏦 LOCAL/BANK` badges.
+
+### 🛡️ 3. Built-in AdGuard Ad-Blocker & Security DNS
+* **AdGuard Ad-Blocking DNS (`94.140.14.14`):** Blocks annoying popups, banner ads, and tracking telemetry phone-wide at the DNS level.
+* **Cloudflare Speed DNS (`1.1.1.1`):** Ultra-low latency DNS resolver optimized for gaming and 4K streaming.
+* **Cloudflare Security (`1.1.1.2`):** Real-time blocking of phishing, scam, and malware hosts.
+* **Quad9 Threat Defense (`9.9.9.9`):** Malicious domain and botnet filtering.
+
+### 🔘 4. Android Quick Settings Notification Tile
+* **1-Tap Connect / Disconnect:** Swipe down from your phone’s status bar to toggle ZeroTrace instantly without opening the app.
+* **Live Server Feedback:** Displays the active server name (e.g. `ZeroTrace • SG - Singapore 01`) directly on the tile.
+* **Native 1-Tap Add (Android 13+):** Add the tile directly from the in-app guide with a single tap.
+
+### 🔄 5. In-App OTA Auto-Updater
+* **Zero-Data Package Support:** Updates download directly through the active encrypted VPN tunnel—even if you have 0 MB regular data on a bug host package!
+* **Interactive Changelogs:** Categorized release notes with glowing badges (`⚡ SPEED`, `📦 COMPACT`, `📷 QR CODE`, `🐛 FIX`).
+* **Active Download Cancel:** 1-tap cancel button to abort downloads at any time.
+
+### 📷 6. QR Code Scanner & Instant Sharing
+* **CameraX + ML Kit Vision:** Super-fast 1-tap QR code scanning from your camera or photo gallery.
+* **ZXing Share Generator:** Generate high-contrast QR codes and share configs with friends via WhatsApp, Telegram, or system share sheet.
+
+### ⚡ 7. Gigabit Performance Engine
+* **Google BBR Congestion Control:** Maximum bandwidth utilization and lowest jitter.
+* **TCP NoDelay & Fast Open:** Disables Nagle's algorithm for minimum gaming ping.
+* **MTU 1400 Zero-Fragmentation Tuning:** Eliminates cellular GTP packet drops on 4G/5G mobile towers.
+* **2048 KB I/O Streaming Buffer:** Doubled internal buffer size for lag-free 4K/8K video streaming.
+
+---
+
+## 📋 Protocol & Feature Matrix
+
+| Feature | Supported Methods / Capabilities |
+| :--- | :--- |
+| **VLESS** | `XTLS Reality`, `Vision (xtls-rprx-vision)`, `WebSocket`, `gRPC`, `TCP`, `HTTPUpgrade` |
+| **VMess** | `WebSocket`, `gRPC`, `TCP`, `TLS / Non-TLS`, `AEAD Encryption` |
+| **Trojan** | `TLS`, `gRPC`, `WebSocket`, `Native TCP` |
+| **Shadowsocks** | `AEAD 2022`, `aes-128-gcm`, `aes-256-gcm`, `chacha20-poly1305` |
+| **Split Tunneling** | `All Apps`, `Bypass Selected (Exclude)`, `VPN Only (Include)` |
+| **DNS Resolvers** | `AdGuard Ad-Blocker`, `Cloudflare 1.1.1.1`, `Cloudflare Security`, `Quad9`, `Google DNS` |
+| **Quick Settings** | `Android Quick Settings Tile` (Android 7.0 - 14.0+) |
+| **Architecture** | `arm64-v8a`, `armeabi-v7a`, `x86_64` |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Installation
+1. Download the latest release: [**ZeroTrace-v1.0.6-arm64.apk**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest/download/ZeroTrace-v1.0.6-arm64.apk)
+2. Open the file on your Android device and tap **Install**.
+
+### 2. Adding a Server Configuration
+ZeroTrace supports three fast ways to import servers:
+* **📋 Clipboard Paste:** Copy any `vless://`, `vmess://`, `trojan://`, or `ss://` link and tap **"Paste from Clipboard"**.
+* **📷 Scan QR Code:** Tap **"Scan QR"** to scan a server QR code via camera or gallery screenshot.
+* **⚙️ Custom JSON:** Paste raw full Xray JSON configuration.
+
+### 3. Connect!
+* Tap the glowing central **Connect** button on the Home screen.
+* Watch real-time Download/Upload speed meters and ping latency respond live!
+
+---
+
+## 📊 Live Analytics & Monitoring
+
+Track live APK downloads and active telemetry with our built-in tools:
+
+### Terminal CLI Monitor
+```bash
+./analytics.sh
 ```
+*Displays total downloads, release breakdown, file sizes, and release dates in real-time.*
+
+### Web Dashboard
+Open [`dashboard/index.html`](dashboard/index.html) in your browser for a responsive cyberpunk analytics dashboard with live counters.
+
+---
+
+## 🤖 Release Automation
+
+ZeroTrace includes an automated release publishing pipeline:
+
+```bash
+# 1-Command Automated Build & Release
+./release.sh
+```
+* **What it does automatically:**
+  1. Bumps `versionCode` and `versionName` in `build.gradle.kts`.
+  2. Compiles optimized, R8-shrunk Release APK (56.6 MB).
+  3. Updates `version.json` with changelogs and date.
+  4. Creates GitHub Release tag and uploads the APK binary via GitHub REST API.
+  5. Pushes updated code to GitHub `main` branch.
+
+---
+
+## 🛠️ Project Structure
+
+```text
 ZeroTrace/
 ├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── AndroidManifest.xml
-│   │   │   ├── java/lk/novalink/zerotrace/
-│   │   │   │   ├── MainActivity.kt               # Main Jetpack Compose navigation & VPN controller
-│   │   │   │   ├── ZeroTraceApp.kt               # Application entry & repository init
-│   │   │   │   ├── core/
-│   │   │   │   │   ├── PingEngine.kt             # TCP socket latency tester
-│   │   │   │   │   ├── VpnState.kt               # State machine (Connecting, Connected, etc.)
-│   │   │   │   │   ├── VpnTunnelManager.kt       # StateFlow singleton bridge
-│   │   │   │   │   └── XrayConfigGenerator.kt    # Production Xray JSON generator
-│   │   │   │   ├── data/
-│   │   │   │   │   ├── model/
-│   │   │   │   │   │   ├── ProxyConfig.kt        # Configuration data entity
-│   │   │   │   │   │   └── ProxyProtocol.kt      # Protocol enum
-│   │   │   │   │   └── repository/
-│   │   │   │   │       ├── ConfigRepository.kt   # Persistent storage for configs
-│   │   │   │   │       └── SettingsRepository.kt # Settings & Support links
-│   │   │   │   ├── parser/
-│   │   │   │   │   ├── ConfigParser.kt           # Master router
-│   │   │   │   │   ├── VlessParser.kt            # VLESS Reality/Vision parser
-│   │   │   │   │   ├── VmessParser.kt            # VMess Base64 parser
-│   │   │   │   │   ├── TrojanParser.kt           # Trojan parser
-│   │   │   │   │   └── ShadowsocksParser.kt      # Shadowsocks parser
-│   │   │   │   ├── service/
-│   │   │   │   │   └── ZeroTraceVpnService.kt    # Android VpnService & TUN manager
-│   │   │   │   └── ui/
-│   │   │   │       ├── components/               # ConnectButton, ServerCard, TopHeader, StatusIndicator
-│   │   │   │       ├── screens/                  # HomeScreen, ConfigsScreen, AddConfigDialog, SettingsScreen
-│   │   │   │       └── theme/                    # Color, Theme, Typography
-│   │   │   └── res/                              # Vector icons, strings, colors, adaptive launcher
-│   │   └── test/                                 # Parser and generator unit tests
-│   └── build.gradle.kts
-├── gradle/
-│   └── libs.versions.toml
-├── build.gradle.kts
-├── settings.gradle.kts
+│   ├── src/main/
+│   │   ├── java/lk/novalink/zerotrace/
+│   │   │   ├── MainActivity.kt               # Jetpack Compose navigation & VPN controller
+│   │   │   ├── ZeroTraceApp.kt               # App singleton & repository lifecycle
+│   │   │   ├── core/
+│   │   │   │   ├── PingEngine.kt             # High-speed TCP socket latency tester
+│   │   │   │   ├── TelemetryManager.kt       # Anonymous usage telemetry
+│   │   │   │   ├── UpdateManager.kt          # In-app OTA streaming updater
+│   │   │   │   ├── VpnTunnelManager.kt       # Real-time StateFlow bridge
+│   │   │   │   ├── XrayConfigGenerator.kt    # Production Xray JSON generator
+│   │   │   │   └── XrayCoreManager.kt        # libXray & hev-socks5-tunnel supervisor
+│   │   │   ├── data/
+│   │   │   │   ├── model/                    # ProxyConfig, SplitTunnelModel, DnsProfile
+│   │   │   │   └── repository/               # ConfigRepository, SettingsRepository, TrafficStats
+│   │   │   ├── parser/                       # VlessParser, VmessParser, TrojanParser, Shadowsocks
+│   │   │   ├── service/
+│   │   │   │   ├── ZeroTraceVpnService.kt    # Android VpnService, TUN & Split Tunnel router
+│   │   │   │   └── ZeroTraceTileService.kt   # Android Quick Settings Notification Tile
+│   │   │   ├── ui/
+│   │   │   │   ├── components/               # UpdateDialog, QuickSettingsGuide, ShareQR, Scanner
+│   │   │   │   ├── screens/                  # HomeScreen, ConfigsScreen, Settings, SplitTunneling
+│   │   │   │   └── theme/                    # Cyberpunk colors, typography, shapes
+│   │   │   └── util/                         # QrCodeGenerator (ZXing)
+│   │   └── res/                              # Vector icons, QS tile icons, adaptive launcher
+│   └── build.gradle.kts                      # R8 Minification, ABI splits, dependencies
+├── dashboard/
+│   └── index.html                            # Standalone live telemetry dashboard
+├── scripts/
+│   ├── analytics.py                          # Live GitHub release metrics script
+│   └── publish_update.py                     # 1-click GitHub release automation engine
+├── analytics.sh                              # CLI analytics executable
+├── release.sh                                # CLI release publisher executable
+├── version.json                              # Live OTA version feed for user devices
 └── README.md
 ```
 
 ---
 
-## How to Build the APK
+## 🔒 Security & Zero-Logs Privacy
 
-### Requirements
-- **JDK 17**
-- **Android SDK** (API 34 / Build Tools 34.0.0)
-- **Gradle 8.7+** (or Android Studio Ladybug / Iguana / Hedgehog)
-
-### Build Command (Debug APK)
-```bash
-./gradlew assembleDebug
-```
-The APK will be generated at:
-```
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-### Build Command (Release APK for Customers)
-```bash
-./gradlew assembleRelease
-```
+* **Strict No-Logs Guarantee:** ZeroTrace does **not** log user IP addresses, visited URLs, DNS queries, or session histories.
+* **Kernel Socket Protection:** Outbound socket file descriptors are protected via `VpnService.protect(fd)` at the OS kernel level.
+* **App Sandboxing:** Server credentials and UUIDs are encrypted within Android's private app sandbox.
+* **Leak Proofing:** Complete DNS and IPv6 leak prevention enforced by default.
 
 ---
 
-## Customer Usage Flow
+## 👥 Credits & Brand
 
-1. Open **ZeroTrace**.
-2. Tap the **"+"** button at the top right (or "Change Server" -> "+").
-3. Tap **"Paste From Clipboard"** (or paste your `vless://`, `vmess://`, `trojan://` config link).
-4. ZeroTrace automatically validates the protocol, extracts host/port/SNI/Reality keys, and saves it.
-5. Tap the **Connect** button to establish the VPN tunnel.
+* **Engineered by:** [**Nexaura Core**](https://nexauracore.com)
+* **Lead Developer:** **Nadun Gawesh**
+* **Network & Community:** **NovaLink LK**
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ for privacy and uncensored internet freedom.</sub>
+</div>
