@@ -1,10 +1,7 @@
 package lk.novalink.zerotrace.parser
 
-import android.net.Uri
 import lk.novalink.zerotrace.data.model.ProxyConfig
 import lk.novalink.zerotrace.data.model.ProxyProtocol
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 object VlessParser {
 
@@ -13,21 +10,20 @@ object VlessParser {
         if (!trimmed.startsWith("vless://", ignoreCase = true)) return null
 
         return try {
-            val uri = Uri.parse(trimmed)
-            val uuid = uri.userInfo ?: ""
-            val host = uri.host ?: ""
-            val port = if (uri.port != -1) uri.port else 443
+            val uri = UriHelper.parse(trimmed) ?: return null
+            val uuid = uri.userInfo
+            val host = uri.host
+            val port = uri.port
 
             if (uuid.isEmpty() || host.isEmpty()) return null
 
-            val fragment = uri.fragment?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
-            val name = if (!fragment.isNullOrBlank()) fragment else "NovaLink VLESS ($host)"
+            val name = if (!uri.fragment.isNullOrBlank()) uri.fragment else "NovaLink VLESS ($host)"
 
             val security = uri.getQueryParameter("security") ?: "none"
             val network = uri.getQueryParameter("type") ?: "tcp"
             val flow = uri.getQueryParameter("flow") ?: ""
             val sni = uri.getQueryParameter("sni") ?: uri.getQueryParameter("host") ?: ""
-            val path = uri.getQueryParameter("path")?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) } ?: ""
+            val path = uri.getQueryParameter("path") ?: ""
             val pbk = uri.getQueryParameter("pbk") ?: ""
             val sid = uri.getQueryParameter("sid") ?: ""
             val fp = uri.getQueryParameter("fp") ?: "chrome"

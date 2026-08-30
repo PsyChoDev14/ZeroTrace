@@ -121,12 +121,16 @@ object XrayConfigGenerator {
         root.add("outbounds", outbounds)
 
         // 5. DNS Settings (Strict IPv4 prioritization, 0ms fast path)
+        val profile = lk.novalink.zerotrace.data.model.DnsProviders.findByPrimaryIp(primaryDns)
+        val secondaryDns = profile?.secondaryIp ?: "1.0.0.1"
+
         val dns = JsonObject().apply {
             add("servers", JsonArray().apply {
                 add("localhost")
                 add(primaryDns)
-                add("8.8.8.8")
-                add("1.0.0.1")
+                if (secondaryDns != primaryDns) {
+                    add(secondaryDns)
+                }
             })
             addProperty("queryStrategy", "UseIPv4")
         }
