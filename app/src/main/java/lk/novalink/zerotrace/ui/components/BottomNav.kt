@@ -61,6 +61,8 @@ fun BottomNav(
     onTabSelected: (NavTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -89,13 +91,27 @@ fun BottomNav(
                     label = "tabTextColor"
                 )
 
+                val iconScale by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (isActive) 1.08f else 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    ),
+                    label = "tabScale"
+                )
+
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { onTabSelected(tab) }
+                            onClick = {
+                                if (!isActive) {
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    onTabSelected(tab)
+                                }
+                            }
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -111,7 +127,9 @@ fun BottomNav(
                             imageVector = tab.icon,
                             contentDescription = tab.label,
                             tint = iconColor,
-                            modifier = Modifier.size(19.dp)
+                            modifier = Modifier
+                                .size(19.dp)
+                                .androidx.compose.ui.draw.scale(iconScale)
                         )
                     }
 

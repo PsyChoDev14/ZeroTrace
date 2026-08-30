@@ -129,12 +129,20 @@ fun SplitTunnelingScreen(
                 } catch (e: Exception) {
                     null
                 }
+                val iconBitmap = iconDrawable?.let {
+                    try {
+                        drawableToBitmap(it).asImageBitmap()
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
 
                 appList.add(
                     InstalledAppInfo(
                         packageName = pkg.packageName,
                         appName = appName,
                         icon = iconDrawable,
+                        iconBitmap = iconBitmap,
                         isSystemApp = isSystem,
                         isSuggestedBankingOrLocal = isLocalOrBank
                     )
@@ -332,14 +340,18 @@ fun SplitTunnelingScreen(
                             .padding(horizontal = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        items(filteredApps, key = { it.packageName }) { app ->
+                        items(
+                            items = filteredApps,
+                            key = { it.packageName },
+                            contentType = { "app_row" }
+                        ) { app ->
                             AppItemCard(
                                 app = app,
                                 isChecked = selectedApps.contains(app.packageName),
                                 onToggle = { onToggleApp(app.packageName) }
                             )
                         }
-                        item { Spacer(modifier = Modifier.height(24.dp)) }
+                        item(contentType = "bottom_spacer") { Spacer(modifier = Modifier.height(24.dp)) }
                     }
                 }
             }
@@ -439,10 +451,9 @@ private fun AppItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // App Icon
-            if (app.icon != null) {
-                val bitmap = remember(app.icon) { drawableToBitmap(app.icon) }
+            if (app.iconBitmap != null) {
                 Image(
-                    bitmap = bitmap.asImageBitmap(),
+                    bitmap = app.iconBitmap,
                     contentDescription = app.appName,
                     modifier = Modifier
                         .size(36.dp)

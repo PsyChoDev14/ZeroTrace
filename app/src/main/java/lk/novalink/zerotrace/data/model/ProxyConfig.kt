@@ -1,7 +1,9 @@
 package lk.novalink.zerotrace.data.model
 
+import androidx.compose.runtime.Immutable
 import java.util.UUID
 
+@Immutable
 data class ProxyConfig(
     val id: String = UUID.randomUUID().toString(),
     val name: String,

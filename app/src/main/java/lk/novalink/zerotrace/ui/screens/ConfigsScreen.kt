@@ -222,19 +222,30 @@ fun ConfigsScreen(
                 }
             } else {
                 // List of Saved Configs
+                val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 120.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(configs, key = { it.id }) { config ->
+                    items(
+                        items = configs,
+                        key = { it.id },
+                        contentType = { "config_card" }
+                    ) { config ->
                         ServerCard(
                             config = config,
                             isSelected = config.id == selectedConfigId,
-                            onSelect = { onSelectConfig(config.id) },
+                            onSelect = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                onSelectConfig(config.id)
+                            },
                             onEdit = { onEditConfig(config) },
                             onShare = { configToShare = config },
-                            onPingTest = { onPingTest(config) },
+                            onPingTest = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                onPingTest(config)
+                            },
                             onDelete = { configToDelete = config }
                         )
                     }

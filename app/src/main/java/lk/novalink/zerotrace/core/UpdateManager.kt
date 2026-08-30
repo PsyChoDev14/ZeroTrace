@@ -1,11 +1,15 @@
 package lk.novalink.zerotrace.core
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import lk.novalink.zerotrace.R
 import lk.novalink.zerotrace.data.model.AppUpdateInfo
 import lk.novalink.zerotrace.data.model.UpdateState
 import java.io.File
@@ -25,6 +30,8 @@ import kotlin.coroutines.coroutineContext
 object UpdateManager {
 
     private const val TAG = "ZeroTrace-Update"
+    private const val UPDATE_CHANNEL_ID = "zerotrace_app_updates"
+    private const val UPDATE_NOTIFICATION_ID = 2001
     
     // Default GitHub raw endpoint where version.json is hosted
     const val DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/PsyChoDev14/ZeroTrace/main/version.json"
@@ -85,6 +92,8 @@ object UpdateManager {
 
                 if (updateInfo.versionCode > currentVersion) {
                     _updateState.value = UpdateState.UpdateAvailable(updateInfo)
+                    // Push high-priority system notification to inform user of new update
+                    postUpdateNotification(context, updateInfo)
                     return@withContext updateInfo
                 } else {
                     _updateState.value = if (isManualCheck) UpdateState.UpToDate else UpdateState.Idle
@@ -107,6 +116,68 @@ object UpdateManager {
                 UpdateState.Idle
             }
             return@withContext null
+        }
+    }
+
+    /**
+     * Posts a high-priority system notification notifying the user of an available update.
+     */
+    fun postUpdateNotification(context: Context, updateInfo: AppUpdateInfo) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    UPDATE_CHANNEL_ID,
+                    "App Updates",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifications when a new version of ZeroTrace is available"
+                    enableLights(true)
+                    enableVibration(true)
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra("EXTRA_SHOW_UPDATE", true)
+            }
+
+            val pendingIntent = if (launchIntent != null) {
+                PendingIntent.getActivity(
+                    context,
+                    UPDATE_NOTIFICATION_ID,
+                    launchIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+                )
+            } else null
+
+            val notificationBuilder = NotificationCompat.Builder(context, UPDATE_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_qs_tile)
+                .setContentTitle("🚀 ZeroTrace v${updateInfo.versionName} Available!")
+                .setContentText("A new version with performance improvements is ready.")
+                .setStyle(
+                    NotificationCompat.BigTextStyle().bigText(
+                        "ZeroTrace v${updateInfo.versionName} is now available!\n\n${updateInfo.changelog}\n\nTap to download & install the update."
+                    )
+                )
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+
+            if (pendingIntent != null) {
+                notificationBuilder.setContentIntent(pendingIntent)
+                notificationBuilder.addAction(
+                    android.R.drawable.stat_sys_download,
+                    "Update Now",
+                    pendingIntent
+                )
+            }
+
+            notificationManager.notify(UPDATE_NOTIFICATION_ID, notificationBuilder.build())
+            Log.d(TAG, "Update notification posted for v${updateInfo.versionName}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post update notification", e)
         }
     }
 
