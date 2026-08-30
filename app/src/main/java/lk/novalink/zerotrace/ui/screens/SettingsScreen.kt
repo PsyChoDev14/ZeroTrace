@@ -96,6 +96,13 @@ fun SettingsScreen(
         Pair("9.9.9.9", "Quad9 Secure DNS")
     )
     var dnsExpanded by remember { mutableStateOf(false) }
+    var showTileGuideDialog by remember { mutableStateOf(false) }
+
+    if (showTileGuideDialog) {
+        lk.novalink.zerotrace.ui.components.QuickSettingsTileGuideDialog(
+            onDismiss = { showTileGuideDialog = false }
+        )
+    }
 
     fun openUrl(url: String) {
         try {
@@ -257,7 +264,7 @@ fun SettingsScreen(
             }
 
             // Quick Settings Notification Tile Guide
-            SettingsCard {
+            SettingsCard(modifier = Modifier.clickable { showTileGuideDialog = true }) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -269,15 +276,31 @@ fun SettingsScreen(
                         modifier = Modifier.size(22.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Quick Settings Tile",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = ZtText
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(ZtAccentSoft)
+                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = "GUIDE",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ZtAccent
+                                )
+                            }
+                        }
                         Text(
-                            text = "Quick Settings Tile",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            color = ZtText
-                        )
-                        Text(
-                            text = "Swipe down status bar & add the ZeroTrace tile for 1-tap connect/disconnect",
+                            text = "Tap here to see guide & 1-tap add to notification bar",
                             fontSize = 11.5.sp,
                             color = ZtTextMuted,
                             lineHeight = 15.sp
