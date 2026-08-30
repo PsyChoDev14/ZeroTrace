@@ -21,8 +21,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AltRoute
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Language
@@ -54,15 +56,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import lk.novalink.zerotrace.data.model.DnsProviders
+import lk.novalink.zerotrace.data.model.SplitTunnelMode
 import lk.novalink.zerotrace.data.repository.SettingsRepository
 import lk.novalink.zerotrace.ui.theme.ZtAccent
 import lk.novalink.zerotrace.ui.theme.ZtAccentSoft
 import lk.novalink.zerotrace.ui.theme.ZtBg
 import lk.novalink.zerotrace.ui.theme.ZtBorder
-import lk.novalink.zerotrace.ui.theme.ZtBorderStrong
+import lk.novalink.zerotrace.ui.theme.ZtSuccess
 import lk.novalink.zerotrace.ui.theme.ZtSurface
 import lk.novalink.zerotrace.ui.theme.ZtSurface2
 import lk.novalink.zerotrace.ui.theme.ZtText
@@ -70,7 +75,7 @@ import lk.novalink.zerotrace.ui.theme.ZtTextFaint
 import lk.novalink.zerotrace.ui.theme.ZtTextMuted
 
 /**
- * Native Jetpack Compose implementation of Settings.tsx from React design system
+ * Native Jetpack Compose implementation of Settings Screen
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,9 +83,12 @@ fun SettingsScreen(
     primaryDns: String,
     bypassLan: Boolean,
     sriLankaSni: String,
+    splitTunnelMode: SplitTunnelMode = SplitTunnelMode.OFF,
+    splitTunnelCount: Int = 0,
     onDnsChange: (String) -> Unit,
     onBypassLanChange: (Boolean) -> Unit,
     onSriLankaSniChange: (String) -> Unit,
+    onNavigateToSplitTunneling: () -> Unit = {},
     onCheckUpdatesClick: () -> Unit,
     onShowOnboarding: (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
@@ -89,12 +97,6 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val dnsOptions = listOf(
-        Pair("1.1.1.1", "Cloudflare DNS (1.1.1.1)"),
-        Pair("8.8.8.8", "Google DNS (8.8.8.8)"),
-        Pair("94.140.14.14", "AdGuard Ad-Blocking DNS"),
-        Pair("9.9.9.9", "Quad9 Secure DNS")
-    )
     var dnsExpanded by remember { mutableStateOf(false) }
     var showTileGuideDialog by remember { mutableStateOf(false) }
 
@@ -131,7 +133,7 @@ fun SettingsScreen(
             if (onBackClick != null) {
                 IconButton(
                     onClick = onBackClick,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
@@ -141,18 +143,26 @@ fun SettingsScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            Text(
-                text = "Settings",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = ZtText
-            )
+
+            Column {
+                Text(
+                    text = "Settings",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ZtText
+                )
+                Text(
+                    text = "VPN core, routing & application settings",
+                    fontSize = 12.sp,
+                    color = ZtTextMuted
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // SECTION 1: CONNECTION
-        SectionHeader(title = "CONNECTION")
+        // SECTION 1: SYSTEM & NETWORK
+        SectionHeader(title = "SYSTEM & NETWORK")
 
         Column(
             modifier = Modifier
@@ -160,6 +170,69 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Split Tunneling Card
+            SettingsCard(modifier = Modifier.clickable(onClick = onNavigateToSplitTunneling)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AltRoute,
+                            contentDescription = "Split Tunneling",
+                            tint = ZtAccent,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Per-App Split Tunneling",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    color = ZtText
+                                )
+                                if (splitTunnelMode != SplitTunnelMode.OFF) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(ZtAccentSoft)
+                                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "${splitTunnelCount} APPS",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = ZtAccent
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = when (splitTunnelMode) {
+                                    SplitTunnelMode.OFF -> "Off • All apps route through VPN"
+                                    SplitTunnelMode.EXCLUDE_SELECTED -> "Bypassing $splitTunnelCount apps (Banking/PickMe)"
+                                    SplitTunnelMode.INCLUDE_ONLY -> "VPN only for $splitTunnelCount selected apps"
+                                },
+                                fontSize = 11.5.sp,
+                                color = if (splitTunnelMode != SplitTunnelMode.OFF) ZtAccent else ZtTextMuted
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Open",
+                        tint = ZtTextFaint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
             // Bypass LAN Switch
             SettingsCard {
                 Row(
@@ -204,23 +277,46 @@ fun SettingsScreen(
                 }
             }
 
-            // Primary DNS Selector
+            // Primary DNS Provider Selector (With Built-in AdGuard Ad-Blocker)
             SettingsCard {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Dns,
-                            contentDescription = "DNS",
-                            tint = ZtAccent,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Primary DNS Provider",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            color = ZtText
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Dns,
+                                contentDescription = "DNS",
+                                tint = ZtAccent,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Primary DNS & Ad-Blocking",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = ZtText
+                            )
+                        }
+
+                        val currentProfile = DnsProviders.findByPrimaryIp(primaryDns)
+                        if (currentProfile?.isAdBlocker == true) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(5.dp))
+                                    .background(Color(0x2635C77B))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "AD-BLOCK ON",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ZtSuccess
+                                )
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -229,8 +325,15 @@ fun SettingsScreen(
                         expanded = dnsExpanded,
                         onExpandedChange = { dnsExpanded = !dnsExpanded }
                     ) {
+                        val selectedProfile = DnsProviders.findByPrimaryIp(primaryDns)
+                        val displayValue = if (selectedProfile != null) {
+                            "${selectedProfile.name} (${selectedProfile.primaryIp})"
+                        } else {
+                            "Custom DNS ($primaryDns)"
+                        }
+
                         OutlinedTextField(
-                            value = dnsOptions.firstOrNull { it.first == primaryDns }?.second ?: primaryDns,
+                            value = displayValue,
                             onValueChange = {},
                             readOnly = true,
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dnsExpanded) },
@@ -249,11 +352,32 @@ fun SettingsScreen(
                             onDismissRequest = { dnsExpanded = false },
                             modifier = Modifier.background(ZtSurface2)
                         ) {
-                            dnsOptions.forEach { option ->
+                            DnsProviders.ALL_PROFILES.forEach { profile ->
                                 DropdownMenuItem(
-                                    text = { Text(option.second, color = ZtText, fontSize = 13.sp) },
+                                    text = {
+                                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(profile.name, color = ZtText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(if (profile.isAdBlocker) Color(0x2635C77B) else ZtAccentSoft)
+                                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                                ) {
+                                                    Text(
+                                                        text = profile.categoryTag,
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (profile.isAdBlocker) ZtSuccess else ZtAccent
+                                                    )
+                                                }
+                                            }
+                                            Text(profile.description, color = ZtTextMuted, fontSize = 10.5.sp)
+                                        }
+                                    },
                                     onClick = {
-                                        onDnsChange(option.first)
+                                        onDnsChange(profile.primaryIp)
                                         dnsExpanded = false
                                     }
                                 )
@@ -306,6 +430,12 @@ fun SettingsScreen(
                             lineHeight = 15.sp
                         )
                     }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Open",
+                        tint = ZtTextFaint,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -333,7 +463,7 @@ fun SettingsScreen(
 
             SupportButton(
                 title = "Check for Updates",
-                subtitle = "v1.0.0 • Tap to check latest release",
+                subtitle = "v1.0.5 • Tap to check latest release",
                 icon = Icons.Default.CloudDownload,
                 iconTint = ZtAccent,
                 onClick = onCheckUpdatesClick
@@ -375,68 +505,93 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp)
         ) {
             SettingsCard {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = "ZeroTrace",
-                        tint = ZtAccent,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "ZeroTrace VPN",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = ZtText
-                    )
-                    Text(
-                        text = "Version 1.0.0 · Xray Core · NovaLink LK Edition",
-                        fontSize = 12.sp,
-                        color = ZtTextMuted
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable { openUrl("https://nexauracore.com") }
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Engineered by Nexaura Core",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = ZtAccent
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Column {
+                            Text(
+                                text = "ZeroTrace VPN",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = ZtText
+                            )
+                            Text(
+                                text = "Version 1.0.5 (Build 6)",
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = ZtTextMuted
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(ZtAccentSoft)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "OFFICIAL",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ZtAccent,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ZtBorder))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { openUrl("https://nexauracore.com") },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Engineered by",
+                                fontSize = 11.sp,
+                                color = ZtTextFaint
+                            )
+                            Text(
+                                text = "Nexaura Core",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ZtAccent
+                            )
+                        }
                         Icon(
                             imageVector = Icons.Default.OpenInNew,
                             contentDescription = "Website",
                             tint = ZtAccent,
-                            modifier = Modifier.size(12.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Lead by Nadun Gawesh",
-                        fontSize = 11.5.sp,
-                        color = ZtTextMuted
-                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Column {
+                        Text(
+                            text = "Lead Developer",
+                            fontSize = 11.sp,
+                            color = ZtTextFaint
+                        )
+                        Text(
+                            text = "Nadun Gawesh",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ZtText
+                        )
+                    }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "We keep no connection logs, no bandwidth logs, and no IP records.",
-            fontSize = 11.5.sp,
-            color = ZtTextFaint,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
     }
 }
 
@@ -446,9 +601,9 @@ private fun SectionHeader(title: String) {
         text = title,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
-        letterSpacing = 1.2.sp,
+        letterSpacing = 1.sp,
         color = ZtTextFaint,
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
     )
 }
 
@@ -463,7 +618,7 @@ private fun SettingsCard(
             .clip(RoundedCornerShape(16.dp))
             .background(ZtSurface)
             .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
-            .padding(14.dp)
+            .padding(16.dp)
     ) {
         content()
     }
@@ -477,46 +632,28 @@ private fun SupportButton(
     iconTint: Color,
     onClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(ZtSurface)
-            .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 12.dp)
-    ) {
+    SettingsCard(modifier = Modifier.clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(iconTint.copy(alpha = 0.14f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = title,
-                        tint = iconTint,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconTint,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
                         text = title,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
+                        fontSize = 13.5.sp,
                         color = ZtText
                     )
                     Text(
@@ -526,12 +663,11 @@ private fun SupportButton(
                     )
                 }
             }
-
             Icon(
                 imageVector = Icons.Default.OpenInNew,
                 contentDescription = "Open",
                 tint = ZtTextFaint,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }

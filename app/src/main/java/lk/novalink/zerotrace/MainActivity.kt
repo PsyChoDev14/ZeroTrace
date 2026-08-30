@@ -100,10 +100,13 @@ class MainActivity : ComponentActivity() {
                         val primaryDns by settingsRepo.primaryDns.collectAsState()
                         val bypassLan by settingsRepo.bypassLan.collectAsState()
                         val sriLankaSni by settingsRepo.sriLankaSniTweak.collectAsState()
+                        val splitTunnelMode by settingsRepo.splitTunnelMode.collectAsState()
+                        val splitTunnelApps by settingsRepo.splitTunnelApps.collectAsState()
 
                         val updateState by UpdateManager.updateState.collectAsState()
 
                         var currentTab by remember { mutableStateOf(NavTab.HOME) }
+                        var isViewingSplitTunneling by remember { mutableStateOf(false) }
                         var showAddDialog by remember { mutableStateOf(false) }
                         var configToEdit by remember { mutableStateOf<ProxyConfig?>(null) }
 
@@ -144,80 +147,93 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            // Main Screen Content based on Active Bottom Tab
-                            AnimatedContent(
-                                targetState = currentTab,
-                                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                label = "tab_transition"
-                            ) { tab ->
-                                when (tab) {
-                                    NavTab.HOME -> HomeScreen(
-                                        vpnState = vpnState,
-                                        selectedConfig = selectedConfig,
-                                        downloadSpeed = downloadSpeed,
-                                        uploadSpeed = uploadSpeed,
-                                        onConnectToggle = { toggleVpn(selectedConfig) { showAddDialog = true } },
-                                        onNavigateToConfigs = { currentTab = NavTab.CONFIGS },
-                                        onNavigateToSettings = { currentTab = NavTab.SETTINGS },
-                                        onAddConfigClick = { showAddDialog = true },
-                                        onEditActiveConfig = { selectedConfig?.let { configToEdit = it } },
-                                        onPingTest = { handlePing(it) }
-                                    )
-
-                                    NavTab.CONFIGS -> ConfigsScreen(
-                                        configs = configs,
-                                        selectedConfigId = selectedConfigId,
-                                        onSelectConfig = { configId ->
-                                            configRepo.setSelectedConfig(configId)
-                                            // If already connected, reconnect to the new config
-                                            if (vpnState is VpnState.Connected) {
-                                                val newConfig = configs.find { it.id == configId }
-                                                if (newConfig != null) {
-                                                    VpnTunnelManager.stopVpn(this@MainActivity)
-                                                    VpnTunnelManager.startVpn(this@MainActivity, newConfig)
-                                                }
-                                            }
-                                        },
-                                        onEditConfig = { config ->
-                                            configToEdit = config
-                                        },
-                                        onDeleteConfig = { configId ->
-                                            configRepo.deleteConfig(configId)
-                                        },
-                                        onPingTest = { handlePing(it) },
-                                        onPingAll = { handlePingAll() },
-                                        onAddConfigClick = { showAddDialog = true },
-                                        onBackClick = null
-                                    )
-
-                                    NavTab.STATS -> StatisticsScreen()
-
-                                    NavTab.SETTINGS -> SettingsScreen(
-                                        primaryDns = primaryDns,
-                                        bypassLan = bypassLan,
-                                        sriLankaSni = sriLankaSni,
-                                        onDnsChange = { settingsRepo.setPrimaryDns(it) },
-                                        onBypassLanChange = { settingsRepo.setBypassLan(it) },
-                                        onSriLankaSniChange = { settingsRepo.setSriLankaSniTweak(it) },
-                                        onCheckUpdatesClick = {
-                                            coroutineScope.launch {
-                                                Toast.makeText(this@MainActivity, "Checking for updates...", Toast.LENGTH_SHORT).show()
-                                                UpdateManager.checkForUpdates(this@MainActivity, isManualCheck = true)
-                                            }
-                                        },
-                                        onShowOnboarding = { hasCompletedOnboarding = false },
-                                        onBackClick = null
-                                    )
-                                }
-                            }
-
-                            // Bottom Navigation Bar from React Design
-                            BottomNav(
-                                activeTab = currentTab,
-                                onTabSelected = { currentTab = it },
-                                modifier = Modifier.align(Alignment.BottomCenter)
+                        if (isViewingSplitTunneling) {
+                            lk.novalink.zerotrace.ui.screens.SplitTunnelingScreen(
+                                currentMode = splitTunnelMode,
+                                selectedApps = splitTunnelApps,
+                                onModeChange = { settingsRepo.setSplitTunnelMode(it) },
+                                onToggleApp = { settingsRepo.toggleApp(it) },
+                                onSelectAll = { settingsRepo.selectAll(it) },
+                                onDeselectAll = { settingsRepo.deselectAll() },
+                                onBackClick = { isViewingSplitTunneling = false }
                             )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                // Main Screen Content based on Active Bottom Tab
+                                AnimatedContent(
+                                    targetState = currentTab,
+                                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                    label = "tab_transition"
+                                ) { tab ->
+                                    when (tab) {
+                                        NavTab.HOME -> HomeScreen(
+                                            vpnState = vpnState,
+                                            selectedConfig = selectedConfig,
+                                            downloadSpeed = downloadSpeed,
+                                            uploadSpeed = uploadSpeed,
+                                            onConnectToggle = { toggleVpn(selectedConfig) { showAddDialog = true } },
+                                            onNavigateToConfigs = { currentTab = NavTab.CONFIGS },
+                                            onNavigateToSettings = { currentTab = NavTab.SETTINGS },
+                                            onAddConfigClick = { showAddDialog = true },
+                                            onEditActiveConfig = { selectedConfig?.let { configToEdit = it } },
+                                            onPingTest = { handlePing(it) }
+                                        )
+
+                                        NavTab.CONFIGS -> ConfigsScreen(
+                                            configs = configs,
+                                            selectedConfigId = selectedConfigId,
+                                            onSelectConfig = { configId ->
+                                                configRepo.setSelectedConfig(configId)
+                                                if (vpnState is VpnState.Connected) {
+                                                    val newConfig = configs.find { it.id == configId }
+                                                    if (newConfig != null) {
+                                                        VpnTunnelManager.startVpn(this@MainActivity, newConfig)
+                                                    }
+                                                }
+                                            },
+                                            onEditConfig = { config ->
+                                                configToEdit = config
+                                            },
+                                            onDeleteConfig = { configId ->
+                                                configRepo.deleteConfig(configId)
+                                            },
+                                            onPingTest = { handlePing(it) },
+                                            onPingAll = { handlePingAll() },
+                                            onAddConfigClick = { showAddDialog = true },
+                                            onBackClick = null
+                                        )
+
+                                        NavTab.STATS -> StatisticsScreen()
+
+                                        NavTab.SETTINGS -> SettingsScreen(
+                                            primaryDns = primaryDns,
+                                            bypassLan = bypassLan,
+                                            sriLankaSni = sriLankaSni,
+                                            splitTunnelMode = splitTunnelMode,
+                                            splitTunnelCount = splitTunnelApps.size,
+                                            onDnsChange = { settingsRepo.setPrimaryDns(it) },
+                                            onBypassLanChange = { settingsRepo.setBypassLan(it) },
+                                            onSriLankaSniChange = { settingsRepo.setSriLankaSniTweak(it) },
+                                            onNavigateToSplitTunneling = { isViewingSplitTunneling = true },
+                                            onCheckUpdatesClick = {
+                                                coroutineScope.launch {
+                                                    Toast.makeText(this@MainActivity, "Checking for updates...", Toast.LENGTH_SHORT).show()
+                                                    UpdateManager.checkForUpdates(this@MainActivity, isManualCheck = true)
+                                                }
+                                            },
+                                            onShowOnboarding = { hasCompletedOnboarding = false },
+                                            onBackClick = null
+                                        )
+                                    }
+                                }
+
+                                // Bottom Navigation Bar from React Design
+                                BottomNav(
+                                    activeTab = currentTab,
+                                    onTabSelected = { currentTab = it },
+                                    modifier = Modifier.align(Alignment.BottomCenter)
+                                )
+                            }
                         }
 
                         // Add Config Dialog

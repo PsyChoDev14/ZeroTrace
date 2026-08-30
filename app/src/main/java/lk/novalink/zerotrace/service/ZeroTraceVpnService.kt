@@ -95,18 +95,48 @@ class ZeroTraceVpnService : VpnService() {
             startForeground(NOTIFICATION_ID, buildNotification("Connecting to ${config.name}..."))
             VpnTunnelManager.updateState(VpnState.Connecting)
 
+            val app = application as? ZeroTraceApp ?: ZeroTraceApp.instance
+            val settingsRepo = app.settingsRepository
+            val splitMode = settingsRepo.splitTunnelMode.value
+            val splitApps = settingsRepo.splitTunnelApps.value
+
+            val dnsProfile = lk.novalink.zerotrace.data.model.DnsProviders.findByPrimaryIp(primaryDns)
+            val secondaryDns = dnsProfile?.secondaryIp ?: "8.8.8.8"
+
             // Configure High-Performance TUN Interface (MTU 1400 for zero 4G/5G carrier fragmentation)
             val builder = Builder()
                 .setSession("ZeroTrace - ${config.name}")
                 .setMtu(1400)
                 .addAddress("10.233.233.2", 24)
                 .addDnsServer(primaryDns)
-                .addDnsServer("8.8.8.8")
+                .addDnsServer(secondaryDns)
                 .addRoute("0.0.0.0", 0)
 
-            // Note: We do NOT disallow self package so that in-app update downloads,
-            // speedtests, and API calls route through the encrypted VPN tunnel
-            // (Socket loops are prevented at the kernel level via vpnService.protect(fd)).
+            // Split Tunneling Application Routing
+            when (splitMode) {
+                lk.novalink.zerotrace.data.model.SplitTunnelMode.EXCLUDE_SELECTED -> {
+                    for (pkg in splitApps) {
+                        try {
+                            builder.addDisallowedApplication(pkg)
+                        } catch (e: Exception) {
+                            Log.w("ZeroTraceVpnService", "Could not disallow package: $pkg", e)
+                        }
+                    }
+                }
+                lk.novalink.zerotrace.data.model.SplitTunnelMode.INCLUDE_ONLY -> {
+                    val appsToInclude = HashSet(splitApps).apply { add(packageName) }
+                    for (pkg in appsToInclude) {
+                        try {
+                            builder.addAllowedApplication(pkg)
+                        } catch (e: Exception) {
+                            Log.w("ZeroTraceVpnService", "Could not allow package: $pkg", e)
+                        }
+                    }
+                }
+                lk.novalink.zerotrace.data.model.SplitTunnelMode.OFF -> {
+                    // Full device tunneling
+                }
+            }
 
             vpnInterface = builder.establish()
 
