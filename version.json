@@ -2,7 +2,7 @@
   "versionCode": 6,
   "versionName": "1.0.5",
   "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.5/ZeroTrace-v1.0.5-arm64.apk",
-  "changelog": "\u2022 Android Quick Settings Tile (1-tap connect/disconnect from status bar)\n\u2022 Live server name displayed in notification panel\n\u2022 Updates download over active VPN (Zero-Data support)\n\u2022 Interactive categorized changelog with glowing badges\n\u2022 Active Cancel Download button support",
+  "changelog": "\u2022 Android Quick Settings Tile (1-tap connect/disconnect from status bar)\n\u2022 Interactive In-App Quick Settings Tile Guide (1-tap add on Android 13+)\n\u2022 Live server name displayed in notification panel\n\u2022 Updates download over active VPN (Zero-Data support)\n\u2022 Interactive categorized changelog with glowing badges",
   "forceUpdate": false,
   "releaseDate": "2026-08-30",
   "minSupportedVersion": 1
