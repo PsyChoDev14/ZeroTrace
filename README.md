@@ -128,6 +128,59 @@ ZeroTrace includes an automated release publishing pipeline:
 
 ---
 
+## 💻 Tech Stack & Architecture
+
+ZeroTrace is built with modern native Android and low-level networking technologies:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ZeroTrace UI Layer                       │
+│     Jetpack Compose • Material 3 • Kotlin Coroutines Flow   │
+├──────────────────────────────┬──────────────────────────────┤
+│      Android System Layer    │       Camera & Vision AI     │
+│  VpnService • QS TileService │   CameraX • ML Kit • ZXing   │
+├──────────────────────────────┴──────────────────────────────┤
+│                    Native Routing Bridge                    │
+│     hev-socks5-tunnel (C / Rust) • TUN Interface (MTU 1400) │
+├─────────────────────────────────────────────────────────────┤
+│                      Xray-Core Engine                       │
+│   VLESS Reality • Vision • VMess • Trojan • Shadowsocks 2022│
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 📱 Android & UI Architecture
+* **Language:** 100% Modern Idiomatic **Kotlin**
+* **UI Toolkit:** **Jetpack Compose** (Declarative Reactive UI)
+* **Design System:** Custom Cyberpunk Dark Theme grounded in Apple HIG & Google Material 3
+* **Concurrency:** **Kotlin Coroutines** & **StateFlow / SharedFlow**
+* **Architecture Pattern:** Clean MVI / Unidirectional Data Flow with Repository Pattern
+* **System Integration:** Android `VpnService`, `TileService` (Quick Settings), `StatusBarManager`, `NotificationManager`
+
+### 🛡️ VPN Core & Native Networking
+* **Core Proxy Engine:** **[Xray-Core v1.8.11](https://github.com/XTLS/Xray-core)** (Compiled with Go / JNI bindings via `LibXray`)
+* **TUN Interface Bridge:** **[hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)** (High-performance native C / Rust daemon)
+* **Congestion Control:** **Google BBR** (Bottleneck Bandwidth and RTT)
+* **Mobile Packet Tuning:** Clamped **MTU 1400** & **TCP MSS 1360** (Zero fragmentation on Sri Lankan mobile carriers)
+* **Buffer Pipeline:** 2048 KB I/O Streaming Ring Buffers for lag-free 4K/8K playback
+
+### 👁️ Camera & Vision AI
+* **Camera Capture:** **AndroidX CameraX** (`camera-view`, `camera-lifecycle`)
+* **QR Detection Engine:** **Google ML Kit Barcode Scanning** (Sub-second on-device machine learning detection)
+* **QR Code Rendering:** **ZXing Core** (`zxing:core:3.5.3`)
+
+### ⚡ Compiler & Optimization
+* **Bytecode Minification:** **Google R8** & **ProGuard** with custom JNI keep-rules
+* **Asset Shrinking:** `isShrinkResources = true` (Reduced APK from 74.2 MB ➔ 56.6 MB)
+* **Build System:** **Gradle 8.7** with Kotlin DSL (`build.gradle.kts`)
+* **ABIs Supported:** `arm64-v8a`, `armeabi-v7a`, `x86_64`
+
+### 📊 DevOps & Telemetry
+* **Release Automation:** Python 3 + GitHub REST API v3
+* **Live Dashboard:** Standalone HTML5 / CSS3 Glassmorphism Dashboard
+* **Serverless Telemetry:** Cloudflare Workers (Edge DAU and active connection tracker)
+
+---
+
 ## 🛠️ Project Structure
 
 ```text
