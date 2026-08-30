@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.OpenInNew
@@ -85,9 +86,11 @@ fun SettingsScreen(
     sriLankaSni: String,
     splitTunnelMode: SplitTunnelMode = SplitTunnelMode.OFF,
     splitTunnelCount: Int = 0,
+    biometricEnabled: Boolean = false,
     onDnsChange: (String) -> Unit,
     onBypassLanChange: (Boolean) -> Unit,
     onSriLankaSniChange: (String) -> Unit,
+    onToggleBiometric: (Boolean) -> Unit = {},
     onNavigateToSplitTunneling: () -> Unit = {},
     onCheckUpdatesClick: () -> Unit,
     onShowOnboarding: (() -> Unit)? = null,
@@ -268,6 +271,68 @@ fun SettingsScreen(
                     Switch(
                         checked = bypassLan,
                         onCheckedChange = onBypassLanChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = ZtAccent,
+                            uncheckedTrackColor = ZtSurface2
+                        )
+                    )
+                }
+            }
+
+            // Biometric App Lock Switch
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Fingerprint,
+                            contentDescription = "Biometric Lock",
+                            tint = ZtAccent,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Biometric App Lock",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    color = ZtText
+                                )
+                                if (biometricEnabled) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(Color(0x2635C77B))
+                                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "ACTIVE",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = ZtSuccess
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = if (biometricEnabled) "App locked with Fingerprint & Face ID" else "Require Fingerprint/PIN to open ZeroTrace",
+                                fontSize = 11.5.sp,
+                                color = if (biometricEnabled) ZtSuccess else ZtTextMuted
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = biometricEnabled,
+                        onCheckedChange = onToggleBiometric,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = ZtAccent,

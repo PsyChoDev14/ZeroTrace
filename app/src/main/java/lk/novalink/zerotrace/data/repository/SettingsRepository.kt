@@ -34,6 +34,15 @@ class SettingsRepository(context: Context) {
     private val _splitTunnelApps = MutableStateFlow<Set<String>>(HashSet(initialApps))
     val splitTunnelApps: StateFlow<Set<String>> = _splitTunnelApps.asStateFlow()
 
+    // Biometric Security Lock
+    private val _biometricLockEnabled = MutableStateFlow(prefs.getBoolean(KEY_BIOMETRIC_LOCK, false))
+    val biometricLockEnabled: StateFlow<Boolean> = _biometricLockEnabled.asStateFlow()
+
+    fun setBiometricLockEnabled(enabled: Boolean) {
+        _biometricLockEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_BIOMETRIC_LOCK, enabled).apply()
+    }
+
     fun setPrimaryDns(dns: String) {
         _primaryDns.value = dns
         prefs.edit().putString(KEY_DNS, dns).apply()
@@ -88,6 +97,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_SL_SNI = "setting_sl_sni"
         private const val KEY_SPLIT_MODE = "setting_split_mode"
         private const val KEY_SPLIT_APPS = "setting_split_apps"
+        private const val KEY_BIOMETRIC_LOCK = "setting_biometric_lock"
 
         const val TELEGRAM_SUPPORT_URL = "https://t.me/novalink_lk"
         const val WHATSAPP_SUPPORT_URL = "https://wa.me/94770000000"

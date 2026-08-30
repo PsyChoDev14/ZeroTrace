@@ -107,6 +107,10 @@ dependencies {
     implementation("com.google.guava:guava:31.1-android")
     implementation("com.google.zxing:core:3.5.3")
 
+    // Biometric Security (Fingerprint & Face ID)
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation("androidx.fragment:fragment-ktx:1.7.1")
+
     // Testing
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.ui.tooling)

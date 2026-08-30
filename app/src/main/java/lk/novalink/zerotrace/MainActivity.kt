@@ -29,6 +29,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+import androidx.fragment.app.FragmentActivity
+import lk.novalink.zerotrace.core.BiometricAuthManager
 import lk.novalink.zerotrace.core.PingEngine
 import lk.novalink.zerotrace.core.UpdateManager
 import lk.novalink.zerotrace.core.VpnState
@@ -39,6 +41,7 @@ import lk.novalink.zerotrace.ui.components.BottomNav
 import lk.novalink.zerotrace.ui.components.NavTab
 import lk.novalink.zerotrace.ui.components.UpdateDialog
 import lk.novalink.zerotrace.ui.screens.AddConfigDialog
+import lk.novalink.zerotrace.ui.screens.BiometricLockScreen
 import lk.novalink.zerotrace.ui.screens.ConfigsScreen
 import lk.novalink.zerotrace.ui.screens.EditConfigDialog
 import lk.novalink.zerotrace.ui.screens.HomeScreen
@@ -48,7 +51,7 @@ import lk.novalink.zerotrace.ui.screens.StatisticsScreen
 import lk.novalink.zerotrace.ui.theme.ZtBg
 import lk.novalink.zerotrace.ui.theme.ZeroTraceTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -102,15 +105,33 @@ class MainActivity : ComponentActivity() {
                         val sriLankaSni by settingsRepo.sriLankaSniTweak.collectAsState()
                         val splitTunnelMode by settingsRepo.splitTunnelMode.collectAsState()
                         val splitTunnelApps by settingsRepo.splitTunnelApps.collectAsState()
+                        val biometricEnabled by settingsRepo.biometricLockEnabled.collectAsState()
 
                         val updateState by UpdateManager.updateState.collectAsState()
 
+                        var isAppUnlocked by remember { mutableStateOf(!settingsRepo.biometricLockEnabled.value) }
+                        var biometricError by remember { mutableStateOf<String?>(null) }
                         var currentTab by remember { mutableStateOf(NavTab.HOME) }
                         var isViewingSplitTunneling by remember { mutableStateOf(false) }
                         var showAddDialog by remember { mutableStateOf(false) }
                         var configToEdit by remember { mutableStateOf<ProxyConfig?>(null) }
 
                         val coroutineScope = rememberCoroutineScope()
+
+                        fun requestBiometricUnlock() {
+                            BiometricAuthManager.authenticate(
+                                activity = this@MainActivity,
+                                title = "ZeroTrace Security",
+                                subtitle = "Scan fingerprint or face to unlock",
+                                onSuccess = {
+                                    isAppUnlocked = true
+                                    biometricError = null
+                                },
+                                onError = { err ->
+                                    biometricError = err
+                                }
+                            )
+                        }
 
                         // Silent background update check on app startup
                         LaunchedEffect(Unit) {
@@ -147,7 +168,12 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        if (isViewingSplitTunneling) {
+                        if (biometricEnabled && !isAppUnlocked) {
+                            BiometricLockScreen(
+                                onUnlockClick = { requestBiometricUnlock() },
+                                errorMessage = biometricError
+                            )
+                        } else if (isViewingSplitTunneling) {
                             lk.novalink.zerotrace.ui.screens.SplitTunnelingScreen(
                                 currentMode = splitTunnelMode,
                                 selectedApps = splitTunnelApps,
@@ -211,9 +237,31 @@ class MainActivity : ComponentActivity() {
                                             sriLankaSni = sriLankaSni,
                                             splitTunnelMode = splitTunnelMode,
                                             splitTunnelCount = splitTunnelApps.size,
+                                            biometricEnabled = biometricEnabled,
                                             onDnsChange = { settingsRepo.setPrimaryDns(it) },
                                             onBypassLanChange = { settingsRepo.setBypassLan(it) },
                                             onSriLankaSniChange = { settingsRepo.setSriLankaSniTweak(it) },
+                                            onToggleBiometric = { enable ->
+                                                BiometricAuthManager.authenticate(
+                                                    activity = this@MainActivity,
+                                                    title = if (enable) "Enable Biometric Lock" else "Disable Biometric Lock",
+                                                    subtitle = "Verify your identity to proceed",
+                                                    onSuccess = {
+                                                        settingsRepo.setBiometricLockEnabled(enable)
+                                                        if (!enable) {
+                                                            isAppUnlocked = true
+                                                        }
+                                                        Toast.makeText(
+                                                            this@MainActivity,
+                                                            if (enable) "Biometric Lock Enabled" else "Biometric Lock Disabled",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    },
+                                                    onError = { err ->
+                                                        Toast.makeText(this@MainActivity, "Authentication failed: $err", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                )
+                                            },
                                             onNavigateToSplitTunneling = { isViewingSplitTunneling = true },
                                             onCheckUpdatesClick = {
                                                 coroutineScope.launch {
