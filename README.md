@@ -6,7 +6,7 @@
 [![Latest Release](https://img.shields.io/github/v/release/PsyChoDev14/ZeroTrace?color=5468FF&label=Release&logo=github&style=for-the-badge)](https://github.com/PsyChoDev14/ZeroTrace/releases/latest)
 [![Platform](https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2024--34)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/PsyChoDev14/ZeroTrace)
 [![Core Engine](https://img.shields.io/badge/Engine-Xray--Core%20v1.8.11-7C4DFF?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/XTLS/Xray-core)
-[![License](https://img.shields.io/badge/License-Proprietary%20%E2%80%A2%20Closed%20Source-FF4757?style=for-the-badge)](https://nexauracore.com)
+[![License](https://img.shields.io/badge/License-MIT-FFA502?style=for-the-badge)](LICENSE)
 [![Status](https://img.shields.io/badge/Build-Passing%20(R8%20Optimized)-35C77B?style=for-the-badge&logo=checkmarx)](https://github.com/PsyChoDev14/ZeroTrace/releases)
 
 <br/>
