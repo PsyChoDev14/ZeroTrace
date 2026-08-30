@@ -133,6 +133,7 @@ class ZeroTraceVpnService : VpnService() {
                     startForeground(NOTIFICATION_ID, buildNotification("Connected to ${config.name} • NovaLink LK"))
                     startTrafficMonitor()
                     registerNetworkCallback()
+                    lk.novalink.zerotrace.core.TelemetryManager.recordVpnConnected(this, config)
                 } else {
                     VpnTunnelManager.updateState(VpnState.Error("Failed to start Xray core"))
                     stopVpnTunnel()

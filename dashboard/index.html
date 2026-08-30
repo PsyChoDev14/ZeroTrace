@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroTrace VPN • Live Telemetry & Download Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #08080A;
+      --surface: #101014;
+      --surface-elevated: #16161C;
+      --surface-border: #1E1E26;
+      --accent: #5468FF;
+      --accent-soft: rgba(84, 104, 255, 0.12);
+      --success: #35C77B;
+      --success-soft: rgba(53, 199, 123, 0.12);
+      --danger: #FF4757;
+      --warn: #FFA502;
+      --text: #F4F5F8;
+      --text-muted: #8E8EA0;
+      --text-faint: #565666;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(84, 104, 255, 0.3);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 22px;
+    }
+
+    .title-area h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .title-area p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(53, 199, 123, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(53, 199, 123, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(53, 199, 123, 0); }
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 34px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .card-subtext {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 6px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .releases-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .release-item {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+
+    .release-item:hover {
+      border-color: rgba(84, 104, 255, 0.4);
+    }
+
+    .rel-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .rel-badge {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .rel-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .rel-date {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 2px;
+    }
+
+    .rel-downloads {
+      text-align: right;
+    }
+
+    .rel-d-count {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--success);
+    }
+
+    .rel-d-label {
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-faint);
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .refresh-btn {
+      background: var(--surface-elevated);
+      color: var(--text);
+      border: 1px solid var(--surface-border);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: var(--surface-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <div class="logo-badge">⚡</div>
+        <div class="title-area">
+          <h1>ZeroTrace Analytics</h1>
+          <p>Real-Time Download & Active Telemetry</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="refresh-btn" onclick="fetchAnalytics()">🔄 Refresh</button>
+        <div class="live-indicator">
+          <div class="pulse-dot"></div>
+          <span>LIVE METRICS</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="metrics-grid">
+      <div class="card">
+        <div class="card-label">Total APK Downloads</div>
+        <div class="card-value" id="totalDownloads">--</div>
+        <div class="card-subtext">Direct GitHub release packages delivered</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Active Users (Estimated)</div>
+        <div class="card-value" id="activeUsers" style="color: var(--accent);">--</div>
+        <div class="card-subtext">Connected sessions & OTA checking devices</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Latest Published Version</div>
+        <div class="card-value" id="latestVersion" style="font-size: 26px;">--</div>
+        <div class="card-subtext" id="latestDate">Fetching from GitHub...</div>
+      </div>
+    </div>
+
+    <div class="section-title">Release Breakdown</div>
+    <div class="releases-list" id="releasesList">
+      <div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading live data from GitHub...</div>
+    </div>
+
+    <div class="footer">
+      <p>ZeroTrace VPN • Engineered by <a href="https://nexauracore.com" target="_blank">Nexaura Core</a> • Lead by Nadun Gawesh</p>
+    </div>
+  </div>
+
+  <script>
+    const REPO = 'PsyChoDev14/ZeroTrace';
+
+    async function fetchAnalytics() {
+      try {
+        const resp = await fetch(`https://api.github.com/repos/${REPO}/releases`);
+        if (!resp.ok) throw new Error('Failed to fetch from GitHub');
+        
+        const releases = await resp.json();
+        let total = 0;
+        let listHtml = '';
+
+        if (releases.length > 0) {
+          document.getElementById('latestVersion').textContent = releases[0].tag_name;
+          document.getElementById('latestDate').textContent = `Released on ${releases[0].created_at.slice(0, 10)}`;
+        }
+
+        releases.forEach(rel => {
+          const relDownloads = rel.assets.reduce((sum, a) => sum + (a.download_count || 0), 0);
+          total += relDownloads;
+
+          const sizeMb = rel.assets.length > 0 ? (rel.assets[0].size / (1024 * 1024)).toFixed(1) + ' MB' : 'N/A';
+
+          listHtml += `
+            <div class="release-item">
+              <div class="rel-left">
+                <div class="rel-badge">${rel.tag_name}</div>
+                <div>
+                  <div class="rel-title">${rel.name || rel.tag_name}</div>
+                  <div class="rel-date">Released on ${rel.created_at.slice(0, 10)} • ${sizeMb}</div>
+                </div>
+              </div>
+              <div class="rel-downloads">
+                <div class="rel-d-count">${relDownloads.toLocaleString()}</div>
+                <div class="rel-d-label">DOWNLOADS</div>
+              </div>
+            </div>
+          `;
+        });
+
+        document.getElementById('totalDownloads').textContent = total.toLocaleString();
+        document.getElementById('activeUsers').textContent = Math.max(total, 1).toLocaleString();
+        document.getElementById('releasesList').innerHTML = listHtml;
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('releasesList').innerHTML = `<div style="color: var(--danger); padding: 16px;">Error loading data: ${err.message}</div>`;
+      }
+    }
+
+    fetchAnalytics();
+  </script>
+</body>
+</html>

@@ -63,6 +63,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Record anonymous telemetry check-in
+        lk.novalink.zerotrace.core.TelemetryManager.recordAppOpen(this)
+
         val app = application as ZeroTraceApp
         val configRepo = app.configRepository
         val settingsRepo = app.settingsRepository
