@@ -255,6 +255,36 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // Quick Settings Notification Tile Guide
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PowerSettingsNew,
+                        contentDescription = "Quick Settings Tile",
+                        tint = ZtAccent,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Quick Settings Tile",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = ZtText
+                        )
+                        Text(
+                            text = "Swipe down status bar & add the ZeroTrace tile for 1-tap connect/disconnect",
+                            fontSize = 11.5.sp,
+                            color = ZtTextMuted,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
