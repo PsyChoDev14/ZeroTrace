@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import lk.novalink.zerotrace.data.model.ProxyConfig
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -18,7 +19,7 @@ object TelemetryManager {
     private const val PREFS_NAME = "zerotrace_telemetry_prefs"
     private const val KEY_CLIENT_ID = "anonymous_client_id"
 
-    // Telemetry Endpoint (Can be swapped with a custom Cloudflare worker or API)
+    // Telemetry Endpoint (Swappable with custom Cloudflare worker or API)
     @Volatile
     var telemetryEndpoint: String = "https://zerotrace-telemetry.nexauracore.workers.dev/api/heartbeat"
 
@@ -50,6 +51,28 @@ object TelemetryManager {
             } catch (e: Exception) {
                 // Silently ignore - telemetry should never disrupt user experience
                 Log.d(TAG, "Telemetry ping skipped: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    fun recordActiveAppsHeartbeat(context: Context, protocol: String, activeApps: List<String>) {
+        val appContext = context.applicationContext
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val clientId = getOrCreateClientId(appContext)
+                val versionName = UpdateManager.getCurrentVersionName(appContext)
+                val payload = JSONObject().apply {
+                    put("clientId", clientId)
+                    put("version", versionName)
+                    put("event", "heartbeat")
+                    put("protocol", protocol)
+                    put("activeApps", JSONArray(activeApps))
+                    put("timestamp", System.currentTimeMillis())
+                }
+
+                sendHeartbeat(payload.toString())
+            } catch (e: Exception) {
+                Log.d(TAG, "Heartbeat ping skipped: ${e.localizedMessage}")
             }
         }
     }

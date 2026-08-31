@@ -189,6 +189,7 @@ class ZeroTraceVpnService : VpnService() {
         monitorJob = serviceScope.launch {
             var lastRx = 0L
             var lastTx = 0L
+            var heartbeatTick = 0
 
             while (isActive) {
                 delay(1000)
@@ -207,6 +208,21 @@ class ZeroTraceVpnService : VpnService() {
                         VpnTunnelManager.updateSpeed(downSpeed, upSpeed)
                         statsRepo?.addTraffic(downSpeed, upSpeed)
                         statsRepo?.addUptimeSecond()
+                    }
+
+                    // Send periodic telemetry heartbeat every 60s with active tunneled apps for owner analytics
+                    heartbeatTick++
+                    if (heartbeatTick >= 60) {
+                        heartbeatTick = 0
+                        val activeAppNames = lk.novalink.zerotrace.core.LiveAppTrafficManager.liveApps.value
+                            .filter { it.isTunneled && (it.isActiveNow || it.totalSessionBytes > 0) }
+                            .map { it.appName }
+                        val protocolStr = currentConfig?.protocol?.name?.lowercase() ?: "vpn"
+                        lk.novalink.zerotrace.core.TelemetryManager.recordActiveAppsHeartbeat(
+                            context = this@ZeroTraceVpnService,
+                            protocol = protocolStr,
+                            activeApps = activeAppNames
+                        )
                     }
                 } catch (e: Throwable) {
                     // Fallback

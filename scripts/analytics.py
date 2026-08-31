@@ -22,10 +22,12 @@ RESET = "\033[0m"
 PROJECT_ROOT = Path(__file__).parent.parent
 TOKEN_FILE = PROJECT_ROOT / ".github_token"
 REPO = "PsyChoDev14/ZeroTrace"
+TELEMETRY_API = "https://zerotrace-telemetry.nexauracore.workers.dev/api/stats"
+ADMIN_KEY = os.environ.get("ADMIN_SECRET", "zerotrace_admin_secret_2026")
 
 def print_banner():
     print(f"\n{CYAN}{BOLD}╔══════════════════════════════════════════════════════════════╗{RESET}")
-    print(f"{CYAN}{BOLD}║         ZEROTRACE VPN • LIVE MONITORING & ANALYTICS          ║{RESET}")
+    print(f"{CYAN}{BOLD}║         ZEROTRACE VPN • DEVELOPER LIVE ANALYTICS             ║{RESET}")
     print(f"{CYAN}{BOLD}╚══════════════════════════════════════════════════════════════╝{RESET}\n")
 
 def get_github_token():
@@ -57,10 +59,45 @@ def fetch_github_release_analytics():
         print(f"Error fetching GitHub stats: {e}")
         return None
 
+def fetch_live_telemetry():
+    url = f"{TELEMETRY_API}?key={ADMIN_KEY}"
+    req = urllib.request.Request(url, headers={"User-Agent": "ZeroTrace-CLI-Admin"})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None
+
 def main():
     print_banner()
-    print(f"📡 Querying repository: {BOLD}{REPO}{RESET}...\n")
-    
+
+    # 1. Query Live Private Telemetry
+    telemetry = fetch_live_telemetry()
+    if telemetry and not telemetry.get("error"):
+        live_users = telemetry.get("liveUsers", 0)
+        dau = telemetry.get("todayUsers", 0)
+        total_conns = telemetry.get("totalConnections", 0)
+        live_apps = telemetry.get("liveConnectedApps", [])
+
+        print(f"{GREEN}{BOLD}════════════════════════════════════════════════════════════════{RESET}")
+        print(f"  🟢 {BOLD}LIVE CONNECTED DEVICES:{RESET}   {GREEN}{BOLD}{live_users}{RESET} active right now")
+        print(f"  📅 {BOLD}DAILY ACTIVE USERS (DAU):{RESET} {CYAN}{BOLD}{dau}{RESET} today")
+        print(f"  ⚡ {BOLD}TOTAL SESSIONS:{RESET}           {PURPLE}{BOLD}{total_conns:,}{RESET} tunnel handshakes")
+        print(f"{GREEN}{BOLD}════════════════════════════════════════════════════════════════{RESET}\n")
+
+        if live_apps:
+            print(f"{BOLD}📱 LIVE RUNNING APPS CONNECTED ACROSS DEVICES:{RESET}")
+            print("─" * 60)
+            print(f"{BOLD}{'APPLICATION NAME':<35} {'ACTIVE DEVICES':<15}{RESET}")
+            print("─" * 60)
+            for app in live_apps[:10]:
+                print(f"{CYAN}{BOLD}{app['name']:<35}{RESET} {GREEN}{app['count']} online{RESET}")
+            print("─" * 60 + "\n")
+        else:
+            print(f"{DIM}ℹ️  No client app traffic active at this instant.{RESET}\n")
+
+    # 2. Query GitHub Releases
+    print(f"📡 Querying repository releases: {BOLD}{REPO}{RESET}...\n")
     releases = fetch_github_release_analytics()
     if not releases:
         print("❌ Could not retrieve release statistics from GitHub.")
@@ -107,13 +144,12 @@ def main():
             size_mb = a.get("size", 0) / (1024 * 1024)
             asset_info = f"{a.get('name', '')} ({size_mb:.1f} MB)"
         
-        # Color highlight
         count_str = f"{GREEN}{BOLD}{d_count:>6}{RESET}" if d_count > 0 else f"{DIM}{d_count:>6}{RESET}"
         print(f"{CYAN}{BOLD}{tag:<10}{RESET} {date:<12} {count_str:<21} {asset_info:<35}")
 
     print("─" * 70)
-    print(f"\n{PURPLE}💡 Tip:{RESET} Run {BOLD}./analytics.sh{RESET} anytime to get live updated counts.")
-    print(f"{PURPLE}🌐 Live Releases:{RESET} https://github.com/{REPO}/releases\n")
+    print(f"\n{PURPLE}💡 Tip:{RESET} Run {BOLD}./analytics.sh{RESET} anytime to monitor live usage & connected apps.")
+    print(f"{PURPLE}🌐 Live Admin Web Dashboard:{RESET} https://zerotrace-telemetry.nexauracore.workers.dev/admin?key={ADMIN_KEY}\n")
 
 if __name__ == "__main__":
     main()
