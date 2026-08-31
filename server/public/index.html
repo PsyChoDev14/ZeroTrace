@@ -3,92 +3,567 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZeroTrace VPN • Live Telemetry & Connected Apps</title>
+  <title>ZeroTrace VPN • Live Telemetry & Device Monitor</title>
   <style>
+    :root {
+      --bg-primary: #07090e;
+      --bg-surface: #0f1422;
+      --bg-surface-elevated: #161d31;
+      --bg-glass: rgba(15, 20, 34, 0.75);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(53, 199, 123, 0.35);
+      --accent: #35c77b;
+      --accent-glow: rgba(53, 199, 123, 0.25);
+      --accent-blue: #38bdf8;
+      --accent-warn: #fbbf24;
+      --accent-danger: #f87171;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #07090e; color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; min-height: 100vh; display: flex; flex-direction: column; }
-    .container { max-width: 900px; margin: 0 auto; width: 100%; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #1f293d; }
-    .title { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: #35c77b; }
-    .badge { background: rgba(53, 199, 123, 0.15); color: #35c77b; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 1px solid rgba(53, 199, 123, 0.3); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .card { background: #0f1422; border: 1px solid #1f293d; border-radius: 16px; padding: 18px; position: relative; overflow: hidden; }
-    .card-label { font-size: 11px; font-weight: 700; color: #6b7280; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
-    .card-value { font-size: 32px; font-weight: 800; font-family: monospace; color: #ffffff; }
-    .section-title { font-size: 14px; font-weight: 700; color: #9ca3af; letter-spacing: 0.8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    .app-table { width: 100%; border-collapse: collapse; background: #0f1422; border: 1px solid #1f293d; border-radius: 16px; overflow: hidden; margin-bottom: 24px; }
-    .app-table th { background: #151c2e; padding: 12px 16px; text-align: left; font-size: 11px; color: #9ca3af; text-transform: uppercase; }
-    .app-table td { padding: 12px 16px; border-top: 1px solid #1a2236; font-size: 13px; }
-    .app-bar { height: 6px; background: #35c77b; border-radius: 3px; margin-top: 4px; }
-    .live-dot { width: 8px; height: 8px; background: #35c77b; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
-    .auth-card { background: #0f1422; border: 1px solid #1f293d; border-radius: 16px; padding: 32px; text-align: center; max-width: 420px; margin: 60px auto; }
-    .auth-input { background: #07090e; border: 1px solid #2a3656; color: #fff; padding: 12px 16px; border-radius: 10px; width: 100%; font-size: 14px; margin-top: 16px; outline: none; }
-    .auth-btn { background: #35c77b; color: #000; font-weight: 700; border: none; padding: 12px 24px; border-radius: 10px; width: 100%; margin-top: 14px; cursor: pointer; font-size: 14px; }
-    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Display", sans-serif;
+      min-height: 100vh;
+      padding: 28px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 1060px; margin: 0 auto; width: 100%; }
+
+    /* Top Navigation / Brand */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; }
+    .brand-title span { color: var(--accent); }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(53, 199, 123, 0.12);
+      color: var(--accent);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    /* Live Pulsing Dot */
+    .radar-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+      animation: radarPulse 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes radarPulse {
+      0% { transform: scale(0.9); opacity: 0.6; }
+      50% { transform: scale(1.3); opacity: 1; filter: drop-shadow(0 0 6px var(--accent)); }
+      100% { transform: scale(0.9); opacity: 0.6; }
+    }
+
+    /* Hero Grid Stats */
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+    }
+    .stat-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-val {
+      font-size: 36px;
+      font-weight: 800;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #ffffff;
+      letter-spacing: -1px;
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 0 4px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Glass Panels / Tables */
+    .glass-panel {
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .modern-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .modern-table th {
+      background: rgba(22, 29, 49, 0.85);
+      padding: 14px 18px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .modern-table td {
+      padding: 16px 18px;
+      font-size: 13.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+    .modern-table tr:last-child td { border-bottom: none; }
+    .modern-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Badges & Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+    }
+    .pill-green { background: rgba(53, 199, 123, 0.14); color: var(--accent); border: 1px solid rgba(53, 199, 123, 0.3); }
+    .pill-blue { background: rgba(56, 189, 248, 0.14); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .pill-warn { background: rgba(251, 191, 36, 0.14); color: var(--accent-warn); border: 1px solid rgba(251, 191, 36, 0.3); }
+    .pill-muted { background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+    /* Action Buttons */
+    .btn-inspect {
+      background: var(--bg-surface-elevated);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-inspect:hover {
+      background: var(--accent);
+      color: #000000;
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Modal Backdrop & Dialog */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(4, 6, 11, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .modal-card {
+      background: #0f1422;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 580px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    .modal-backdrop.open .modal-card { transform: scale(1) translateY(0); }
+
+    .modal-header {
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(22, 29, 49, 0.6);
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-close {
+      background: rgba(255, 255, 255, 0.06);
+      border: none;
+      color: var(--text-secondary);
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-close:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    .modal-body { padding: 24px; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .detail-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 14px 16px;
+      border-radius: 14px;
+    }
+    .detail-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+    }
+    .detail-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      word-break: break-all;
+    }
+    .detail-val.mono { font-family: ui-monospace, monospace; }
+
+    .apps-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .app-chip {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent-blue);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Auth Gate */
+    .auth-gate {
+      max-width: 420px;
+      margin: 80px auto;
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 36px 28px;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    }
+    .auth-input {
+      background: rgba(7, 9, 14, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 12px;
+      width: 100%;
+      font-size: 14px;
+      margin-top: 18px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .auth-input:focus { border-color: var(--accent); }
+    .auth-btn {
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+      border: none;
+      padding: 13px 20px;
+      border-radius: 12px;
+      width: 100%;
+      margin-top: 14px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+    .auth-btn:hover { opacity: 0.92; box-shadow: 0 0 18px var(--accent-glow); }
+
+    /* Force Update Bar */
+    .ctrl-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(22, 29, 49, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    
     <!-- Auth Gate -->
-    <div id="auth-box" class="auth-card">
-      <div style="font-size: 32px; margin-bottom: 12px;">🛡️</div>
-      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">ZeroTrace Admin Telemetry</h2>
-      <p style="color: #6b7280; font-size: 12px;">Enter your admin secret key to view live connected apps & active users:</p>
-      <input type="password" id="secret-key" class="auth-input" placeholder="Enter Admin Secret..." value="zerotrace_admin_secret_2026">
-      <button class="auth-btn" onclick="unlockDashboard()">Unlock Live Dashboard</button>
-      <div id="auth-err" style="color: #ff453a; font-size: 12px; margin-top: 10px; display: none;">Invalid Secret Key</div>
+    <div id="auth-box" class="auth-gate">
+      <div style="font-size: 36px; margin-bottom: 12px;">🛡️</div>
+      <h2 style="font-size: 19px; font-weight: 800; letter-spacing: -0.3px;">ZeroTrace Admin Telemetry</h2>
+      <p style="color: var(--text-secondary); font-size: 12.5px; margin-top: 6px; line-height: 1.5;">
+        Enter your secret developer key to access the live device inspector and real-time app telemetry:
+      </p>
+      <input type="password" id="secret-key" class="auth-input" placeholder="Enter Admin Secret Key..." value="zerotrace_admin_secret_2026">
+      <button class="auth-btn" onclick="unlockDashboard()">Unlock Live Portal</button>
+      <div id="auth-err" style="color: var(--accent-danger); font-size: 12px; margin-top: 12px; display: none;">Invalid Secret Key</div>
     </div>
 
-    <!-- Main Dashboard -->
+    <!-- Main Portal -->
     <div id="dash-box" style="display: none;">
+      
       <div class="header">
-        <div class="title">
-          <span class="live-dot"></span>
-          <span>ZeroTrace VPN Admin Telemetry</span>
+        <div class="brand">
+          <div class="brand-title">ZeroTrace<span>.</span> Admin Portal</div>
         </div>
-        <div class="badge">LIVE PRIVATE VIEW</div>
-      </div>
-
-      <div class="grid">
-        <div class="card">
-          <div class="card-label">🟢 Live Connected Devices</div>
-          <div class="card-value" id="val-live" style="color:#35c77b;">0</div>
-        </div>
-        <div class="card">
-          <div class="card-label">📅 Daily Active Users (DAU)</div>
-          <div class="card-value" id="val-dau">0</div>
-        </div>
-        <div class="card">
-          <div class="card-label">⚡ Total Tunnel Connections</div>
-          <div class="card-value" id="val-total">0</div>
+        <div class="status-badge">
+          <span class="radar-dot"></span>
+          <span>LIVE TELEMETRY STREAM</span>
         </div>
       </div>
 
-      <div class="section-title">
-        <span>📱 LIVE RUNNING APPS CONNECTED ACROSS DEVICES</span>
+      <!-- Quick Metrics Ribbon -->
+      <div class="grid-stats">
+        <div class="stat-card">
+          <div class="stat-label">🟢 Active Connected Devices</div>
+          <div class="stat-val" id="val-live" style="color: var(--accent);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">📅 Daily Active Users (DAU)</div>
+          <div class="stat-val" id="val-dau">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">⚡ Total Tunnel Handshakes</div>
+          <div class="stat-val" id="val-total">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🚨 Force Update Status</div>
+          <div class="stat-val" id="val-fu-status" style="font-size: 20px; font-weight: 800; color: var(--accent-blue); padding-top: 6px;">OFF</div>
+        </div>
       </div>
 
-      <table class="app-table">
-        <thead>
-          <tr>
-            <th>Application Name</th>
-            <th>Active Devices Routing Traffic</th>
-            <th style="width: 35%;">Bandwidth Share</th>
-          </tr>
-        </thead>
-        <tbody id="live-apps-body">
-          <tr><td colspan="3" style="text-align:center; color:#6b7280; padding:24px;">No active device traffic at this second. Open the app to see live apps appear!</td></tr>
-        </tbody>
-      </table>
+      <!-- Remote Force Update Control Bar -->
+      <div class="ctrl-bar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 20px;">📢</span>
+          <div>
+            <div style="font-size: 13.5px; font-weight: 700;">Global Remote Force Update Manager</div>
+            <div style="font-size: 11.5px; color: var(--text-secondary);">Enforce mandatory OTA updates for all connected Android clients</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span id="fu-label" class="pill pill-muted">v1.0.8 Required</span>
+          <button id="btn-fu-toggle" onclick="toggleForceUpdate()" class="btn-inspect" style="background: var(--bg-surface);">
+            ⚡ Toggle Force Update
+          </button>
+        </div>
+      </div>
 
-      <div style="text-align:center; color:#4b5563; font-size:11px; margin-top:20px;">
-        ZeroTrace Private Telemetry Engine • Auto-refreshing every 3 seconds
+      <!-- Live Devices Section -->
+      <div class="section-header">
+        <div class="section-title">
+          <span>📱 LIVE CONNECTED DEVICES (TAP TO INSPECT)</span>
+        </div>
+        <div id="device-count-tag" style="font-size: 11px; font-weight: 700; color: var(--text-secondary);">0 Devices Online</div>
+      </div>
+
+      <div class="glass-panel">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Device Model & OS</th>
+              <th>Connected Config (Remark)</th>
+              <th>Protocol & Version</th>
+              <th>Active Tunnel Apps</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="devices-table-body">
+            <tr>
+              <td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">
+                No active devices connected right now. Open ZeroTrace on a phone to inspect it live!
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Live Running Apps Across All Devices Section -->
+      <div class="section-header">
+        <div class="section-title">
+          <span>📊 GLOBAL APP TRAFFIC BREAKDOWN</span>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Application Name</th>
+              <th>Active Clients Routing Traffic</th>
+              <th style="width: 40%;">Bandwidth Share</th>
+            </tr>
+          </thead>
+          <tbody id="live-apps-body">
+            <tr>
+              <td colspan="3" style="text-align:center; color:var(--text-muted); padding:28px;">
+                Loading live app telemetry...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="text-align:center; color:var(--text-muted); font-size:11.5px; margin-top:24px; padding-bottom: 20px;">
+        ZeroTrace Private Telemetry Engine • Real-time cloud sync every 3s
+      </div>
+    </div>
+  </div>
+
+  <!-- Modern Device Detail Glass Modal Pop-Up -->
+  <div id="device-modal" class="modal-backdrop" onclick="handleBackdropClick(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📱</span>
+          <span id="m-device-title">Device Telemetry Inspector</span>
+        </div>
+        <button class="btn-close" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Key Device & Config Metrics Grid -->
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">Hardware & Device</div>
+            <div class="detail-val" id="m-model">--</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Android OS Version</div>
+            <div class="detail-val" id="m-os">--</div>
+          </div>
+          <div class="detail-item" style="grid-column: span 2;">
+            <div class="detail-label">Connected Config (Remark)</div>
+            <div class="detail-val" id="m-config" style="color: var(--accent); font-size: 15px;">--</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Server Endpoint</div>
+            <div class="detail-val mono" id="m-server" style="font-size: 12.5px;">--</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Protocol & App Version</div>
+            <div class="detail-val mono" id="m-protocol-ver">--</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Live Session Duration</div>
+            <div class="detail-val mono" id="m-duration">--</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Last Heartbeat Ping</div>
+            <div class="detail-val mono" id="m-last-seen">Just now</div>
+          </div>
+        </div>
+
+        <!-- Live Tunneled Apps on This Device -->
+        <div style="margin-top: 16px;">
+          <div class="detail-label">Apps Currently Routing Through VPN:</div>
+          <div id="m-apps-container" class="apps-chips">
+            <span style="color: var(--text-muted); font-size: 12px;">No active app bandwidth right now</span>
+          </div>
+        </div>
+
+        <!-- Anonymized Client ID -->
+        <div style="margin-top: 20px; padding: 10px 14px; background: rgba(0,0,0,0.3); border-radius: 10px; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+          <span>Client ID Hash:</span>
+          <span id="m-client-id" class="mono" style="color: var(--text-secondary);">--</span>
+        </div>
+
       </div>
     </div>
   </div>
 
   <script>
     let adminKey = localStorage.getItem('zt_admin_key') || new URLSearchParams(window.location.search).get('key') || '';
+    let latestStatsData = null;
+    let globalForceUpdateActive = false;
 
     if (adminKey) {
       document.getElementById('secret-key').value = adminKey;
@@ -117,33 +592,179 @@
         const res = await fetch('/api/stats?key=' + encodeURIComponent(adminKey));
         if (res.status === 401) return false;
         const data = await res.json();
-        
+        latestStatsData = data;
+
+        // 1. Update Metrics Ribbon
         document.getElementById('val-live').innerText = data.liveUsers || 0;
         document.getElementById('val-dau').innerText = data.todayUsers || 0;
         document.getElementById('val-total').innerText = data.totalConnections || 0;
 
-        const tbody = document.getElementById('live-apps-body');
-        if (data.liveConnectedApps && data.liveConnectedApps.length > 0) {
-          const maxCount = Math.max(...data.liveConnectedApps.map(a => a.count), 1);
-          tbody.innerHTML = data.liveConnectedApps.map(app => {
-            const pct = Math.round((app.count / maxCount) * 100);
-            return '<tr>' +
-              '<td style="font-weight:600; color:#fff;">' + app.name + '</td>' +
-              '<td><span style="color:#35c77b; font-weight:700; font-family:monospace;">' + app.count + ' active</span></td>' +
-              '<td><div style="display:flex; align-items:center; gap:8px;">' +
-              '<div style="flex:1; background:#1a2236; height:6px; border-radius:3px; overflow:hidden;">' +
-              '<div class="app-bar" style="width:' + pct + '%;"></div></div>' +
-              '<span style="font-size:10px; color:#9ca3af; font-family:monospace;">' + pct + '%</span></div></td>' +
-              '</tr>';
-          }).join('');
+        globalForceUpdateActive = !!data.forceUpdateGlobal;
+        const fuBadge = document.getElementById('val-fu-status');
+        const fuBtn = document.getElementById('btn-fu-toggle');
+        if (globalForceUpdateActive) {
+          fuBadge.innerText = 'ENFORCED';
+          fuBadge.style.color = 'var(--accent-warn)';
+          fuBtn.innerText = '🔴 Disable Force Update';
         } else {
-          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#6b7280; padding:24px;">No client app traffic reported right now. When users connect with apps, they appear here live!</td></tr>';
+          fuBadge.innerText = 'NORMAL';
+          fuBadge.style.color = 'var(--accent-blue)';
+          fuBtn.innerText = '⚡ Enforce Force Update';
         }
+
+        // 2. Render Interactive Live Devices Table
+        renderDevicesTable(data.devices || []);
+
+        // 3. Render Global Apps Table
+        renderAppsTable(data.liveConnectedApps || []);
+
         return true;
       } catch (e) {
-        console.error(e);
+        console.error("Telemetry fetch error:", e);
         return false;
       }
+    }
+
+    function renderDevicesTable(devices) {
+      const tbody = document.getElementById('devices-table-body');
+      document.getElementById('device-count-tag').innerText = devices.length + ' Device' + (devices.length === 1 ? '' : 's') + ' Online';
+
+      if (!devices || devices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:32px;">No active devices connected right now. Open ZeroTrace on a phone to inspect it live!</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = devices.map((dev, idx) => {
+        const model = dev.deviceModel || 'Android Device';
+        const os = dev.androidVersion || 'Android';
+        const configName = dev.configRemark || 'ZeroTrace Direct';
+        const proto = (dev.protocol || 'VLESS').toUpperCase();
+        const ver = dev.version ? ('v' + dev.version) : 'v1.0.8';
+        const appsCount = dev.activeApps && dev.activeApps.length ? dev.activeApps.length : 0;
+        const appsLabel = appsCount > 0 ? (dev.activeApps.slice(0, 2).join(', ') + (appsCount > 2 ? ' +' + (appsCount - 2) : '')) : 'Idle Bandwidth';
+
+        return `<tr>
+          <td>
+            <div style="font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+              <span>📱</span>
+              <span>${escapeHtml(model)}</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${escapeHtml(os)}</div>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 6px;">
+              <span>⚡</span>
+              <span>${escapeHtml(configName)}</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${escapeHtml(dev.serverAddress || 'Direct Route')}</div>
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span class="pill pill-blue">${escapeHtml(proto)}</span>
+              <span class="pill pill-muted">${escapeHtml(ver)}</span>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 12.5px; color: #ffffff; font-weight: 600;">${escapeHtml(appsLabel)}</div>
+            <div style="font-size: 10.5px; color: var(--text-secondary);">${appsCount} active app${appsCount === 1 ? '' : 's'}</div>
+          </td>
+          <td>
+            <button class="btn-inspect" onclick="openDeviceModal('${escapeHtml(dev.clientId || idx)}')">
+              🔍 Inspect Specs
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderAppsTable(apps) {
+      const tbody = document.getElementById('live-apps-body');
+      if (!apps || apps.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:28px;">No app bandwidth active at this second. Tunnel traffic appears here live.</td></tr>';
+        return;
+      }
+
+      const maxCount = Math.max(...apps.map(a => a.count), 1);
+      tbody.innerHTML = apps.map(app => {
+        const pct = Math.round((app.count / maxCount) * 100);
+        return `<tr>
+          <td style="font-weight: 700; color: #ffffff;">${escapeHtml(app.name)}</td>
+          <td><span class="pill pill-green">${app.count} device${app.count === 1 ? '' : 's'} active</span></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="flex: 1; background: rgba(255,255,255,0.06); height: 7px; border-radius: 4px; overflow: hidden;">
+                <div style="width: ${pct}%; height: 100%; background: var(--accent); border-radius: 4px; box-shadow: 0 0 10px var(--accent-glow);"></div>
+              </div>
+              <span style="font-size: 11px; font-family: monospace; color: var(--text-secondary); width: 35px;">${pct}%</span>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function openDeviceModal(clientId) {
+      if (!latestStatsData || !latestStatsData.devices) return;
+      const dev = latestStatsData.devices.find(d => d.clientId === clientId) || latestStatsData.devices[0];
+      if (!dev) return;
+
+      document.getElementById('m-device-title').innerText = dev.deviceModel || 'Android Device';
+      document.getElementById('m-model').innerText = dev.deviceModel || 'Android Device';
+      document.getElementById('m-os').innerText = dev.androidVersion || 'Android';
+      document.getElementById('m-config').innerText = dev.configRemark || 'ZeroTrace Direct Tunnel';
+      document.getElementById('m-server').innerText = dev.serverAddress || 'Direct Gateway';
+      document.getElementById('m-protocol-ver').innerText = (dev.protocol || 'VLESS').toUpperCase() + ' • v' + (dev.version || '1.0.8');
+      
+      const durSec = dev.durationSeconds || 0;
+      const hrs = Math.floor(durSec / 3600);
+      const mins = Math.floor((durSec % 3600) / 60);
+      const secs = durSec % 60;
+      document.getElementById('m-duration').innerText = (hrs > 0 ? (hrs + 'h ') : '') + mins + 'm ' + secs + 's';
+
+      document.getElementById('m-last-seen').innerText = (dev.onlineAgoSeconds || 0) + 's ago';
+      document.getElementById('m-client-id').innerText = dev.clientId || 'Client-Anonymous';
+
+      const appsContainer = document.getElementById('m-apps-container');
+      if (dev.activeApps && dev.activeApps.length > 0) {
+        appsContainer.innerHTML = dev.activeApps.map(a => `<span class="app-chip">📱 ${escapeHtml(a)}</span>`).join('');
+      } else {
+        appsContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 12px;">No active background apps reported</span>';
+      }
+
+      document.getElementById('device-modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('device-modal').classList.remove('open');
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target.id === 'device-modal') closeModal();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    async function toggleForceUpdate() {
+      const newState = !globalForceUpdateActive;
+      try {
+        const res = await fetch('/api/force-update?key=' + encodeURIComponent(adminKey), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: newState, minVersion: "1.0.8" })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          globalForceUpdateActive = newState;
+          fetchStats();
+        }
+      } catch (e) {
+        alert("Error toggling force update: " + e.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
   </script>
 </body>

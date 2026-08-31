@@ -1,7 +1,6 @@
 const { recordHeartbeat } = require('../lib/store');
 
 module.exports = async (req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, User-Agent, Authorization, x-admin-key');
@@ -16,8 +15,30 @@ module.exports = async (req, res) => {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const { clientId, version, protocol, activeApps, event } = body;
-    await recordHeartbeat(clientId, version, protocol, activeApps, event);
+    const {
+      clientId,
+      version,
+      protocol,
+      activeApps,
+      event,
+      configRemark,
+      serverAddress,
+      deviceModel,
+      androidVersion,
+      durationSeconds,
+      downloadSpeed,
+      uploadSpeed
+    } = body;
+
+    await recordHeartbeat(clientId, version, protocol, activeApps, event, {
+      configRemark,
+      serverAddress,
+      deviceModel,
+      androidVersion,
+      durationSeconds,
+      downloadSpeed,
+      uploadSpeed
+    });
 
     return res.status(200).json({ status: 'ok', timestamp: Date.now() });
   } catch (e) {

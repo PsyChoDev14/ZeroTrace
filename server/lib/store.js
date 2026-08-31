@@ -1,14 +1,17 @@
 const https = require('https');
+
 const GIST_ID = process.env.GIST_ID || 'c3b734cf5cad834a732b4dfb1584b449';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || (function() {
   try { return require('fs').readFileSync(require('path').join(__dirname, '../.github_token'), 'utf8').trim(); } catch(e) { return ''; }
 })();
 
-// Memory cache
+// In-memory runtime cache
 global._zt_store = global._zt_store || {
-  liveDevices: {}, // clientId -> { version, protocol, activeApps, ts }
+  liveDevices: {}, // clientId -> { clientId, deviceModel, androidVersion, configRemark, serverAddress, version, protocol, durationSeconds, downloadSpeed, uploadSpeed, activeApps, ts }
   dailyUsers: [],
   totalConnections: 0,
+  forceUpdateGlobal: false,
+  minRequiredVersion: "1.0.8",
   lastDailyReset: new Date().toISOString().slice(0, 10),
   lastGistSync: 0
 };
@@ -28,7 +31,7 @@ function githubRequest(path, method, body) {
         'Accept': 'application/vnd.github.v3+json',
         ...(data ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } : {})
       },
-      timeout: 4000
+      timeout: 5000
     }, (res) => {
       let raw = '';
       res.on('data', chunk => raw += chunk);
@@ -41,7 +44,7 @@ function githubRequest(path, method, body) {
       });
     });
 
-    req.on('error', (e) => resolve({}));
+    req.on('error', () => resolve({}));
     req.on('timeout', () => { req.destroy(); resolve({}); });
     if (data) req.write(data);
     req.end();
@@ -57,6 +60,8 @@ async function loadFromGist() {
       store.liveDevices = data.liveDevices || {};
       store.dailyUsers = Array.isArray(data.dailyUsers) ? data.dailyUsers : [];
       store.totalConnections = data.totalConnections || 0;
+      store.forceUpdateGlobal = !!data.forceUpdateGlobal;
+      store.minRequiredVersion = data.minRequiredVersion || "1.0.8";
       store.lastDailyReset = data.lastDailyReset || new Date().toISOString().slice(0, 10);
       store.lastGistSync = Date.now();
     }
@@ -72,6 +77,8 @@ async function saveToGist() {
             liveDevices: store.liveDevices,
             dailyUsers: store.dailyUsers,
             totalConnections: store.totalConnections,
+            forceUpdateGlobal: store.forceUpdateGlobal,
+            minRequiredVersion: store.minRequiredVersion,
             lastDailyReset: store.lastDailyReset
           })
         }
@@ -90,16 +97,15 @@ function cleanupStale() {
     store.lastDailyReset = today;
   }
 
-  // Active window: 3 minutes (180s)
+  // Active TTL: 3 minutes (180s)
   for (const clientId in store.liveDevices) {
-    if (now - store.liveDevices[clientId].ts > 180 * 1000) {
+    if (now - (store.liveDevices[clientId].ts || 0) > 180 * 1000) {
       delete store.liveDevices[clientId];
     }
   }
 }
 
-async function recordHeartbeat(clientId, version, protocol, activeApps, event) {
-  // Pull latest state if cache is older than 5s
+async function recordHeartbeat(clientId, version, protocol, activeApps, event, extra = {}) {
   if (Date.now() - store.lastGistSync > 5000) {
     await loadFromGist();
   }
@@ -112,11 +118,22 @@ async function recordHeartbeat(clientId, version, protocol, activeApps, event) {
       store.dailyUsers.push(clientId);
     }
 
+    const prev = store.liveDevices[clientId] || {};
+
     store.liveDevices[clientId] = {
-      version: version || '1.0.8',
-      protocol: protocol || 'vless',
-      activeApps: Array.isArray(activeApps) ? activeApps : [],
-      ts: now
+      clientId,
+      version: version || prev.version || '1.0.8',
+      protocol: protocol || prev.protocol || 'vless',
+      configRemark: extra.configRemark || prev.configRemark || 'ZeroTrace Direct',
+      serverAddress: extra.serverAddress || prev.serverAddress || '',
+      deviceModel: extra.deviceModel || prev.deviceModel || 'Android Device',
+      androidVersion: extra.androidVersion || prev.androidVersion || 'Android',
+      durationSeconds: extra.durationSeconds || prev.durationSeconds || 0,
+      downloadSpeed: extra.downloadSpeed || 0,
+      uploadSpeed: extra.uploadSpeed || 0,
+      activeApps: Array.isArray(activeApps) ? activeApps : (prev.activeApps || []),
+      ts: now,
+      firstSeen: prev.firstSeen || now
     };
 
     if (event === 'vpn_connected') {
@@ -124,12 +141,18 @@ async function recordHeartbeat(clientId, version, protocol, activeApps, event) {
     }
   }
 
-  // Persist updated state to Gist
   await saveToGist();
 }
 
+async function setForceUpdate(enabled, minVersion) {
+  await loadFromGist();
+  store.forceUpdateGlobal = !!enabled;
+  if (minVersion) store.minRequiredVersion = minVersion;
+  await saveToGist();
+  return { forceUpdateGlobal: store.forceUpdateGlobal, minRequiredVersion: store.minRequiredVersion };
+}
+
 async function getStats() {
-  // Always load latest persisted state
   await loadFromGist();
   cleanupStale();
 
@@ -137,8 +160,12 @@ async function getStats() {
   const protocolMap = {};
   const versionMap = {};
 
-  const devices = Object.values(store.liveDevices);
-  for (const device of devices) {
+  const devicesList = Object.values(store.liveDevices).map(dev => ({
+    ...dev,
+    onlineAgoSeconds: Math.round((Date.now() - (dev.ts || Date.now())) / 1000)
+  }));
+
+  for (const device of devicesList) {
     if (device.protocol) {
       protocolMap[device.protocol] = (protocolMap[device.protocol] || 0) + 1;
     }
@@ -157,11 +184,14 @@ async function getStats() {
     .sort((a, b) => b.count - a.count);
 
   return {
-    liveUsers: devices.length,
+    liveUsers: devicesList.length,
     todayUsers: store.dailyUsers.length,
     totalConnections: store.totalConnections,
+    forceUpdateGlobal: store.forceUpdateGlobal,
+    minRequiredVersion: store.minRequiredVersion,
     protocols: protocolMap,
     versions: versionMap,
+    devices: devicesList,
     liveConnectedApps,
     timestamp: Date.now()
   };
@@ -169,5 +199,6 @@ async function getStats() {
 
 module.exports = {
   recordHeartbeat,
+  setForceUpdate,
   getStats
 };

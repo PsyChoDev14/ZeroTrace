@@ -210,17 +210,26 @@ class ZeroTraceVpnService : VpnService() {
                         statsRepo?.addUptimeSecond()
                     }
 
-                    // Send periodic telemetry heartbeat every 60s with active tunneled apps for owner analytics
+                    // Send periodic telemetry heartbeat every 45s with active tunneled apps and config details for owner analytics
                     heartbeatTick++
-                    if (heartbeatTick >= 60) {
+                    if (heartbeatTick >= 45) {
                         heartbeatTick = 0
                         val activeAppNames = lk.novalink.zerotrace.core.LiveAppTrafficManager.liveApps.value
                             .filter { it.isTunneled && (it.isActiveNow || it.totalSessionBytes > 0) }
                             .map { it.appName }
                         val protocolStr = currentConfig?.protocol?.name?.lowercase() ?: "vpn"
+                        val remarkStr = currentConfig?.name ?: "Direct Tunnel"
+                        val srvStr = currentConfig?.let { "${it.server}:${it.port}" } ?: ""
+                        val uptimeSec = statsRepo?.liveTrafficData?.value?.connectionSeconds ?: 0L
+
                         lk.novalink.zerotrace.core.TelemetryManager.recordActiveAppsHeartbeat(
                             context = this@ZeroTraceVpnService,
                             protocol = protocolStr,
+                            configRemark = remarkStr,
+                            serverAddress = srvStr,
+                            durationSeconds = uptimeSec,
+                            downloadSpeed = downSpeed,
+                            uploadSpeed = upSpeed,
                             activeApps = activeAppNames
                         )
                     }

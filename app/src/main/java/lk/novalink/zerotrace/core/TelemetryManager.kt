@@ -2,6 +2,7 @@ package lk.novalink.zerotrace.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,16 @@ object TelemetryManager {
         return clientId
     }
 
+    private fun getDeviceModel(): String {
+        val manu = Build.MANUFACTURER?.replaceFirstChar { it.uppercase() } ?: "Android"
+        val model = Build.MODEL ?: "Device"
+        return if (model.startsWith(manu, ignoreCase = true)) model else "$manu $model"
+    }
+
+    private fun getAndroidVersion(): String {
+        return "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+    }
+
     fun recordVpnConnected(context: Context, config: ProxyConfig) {
         val appContext = context.applicationContext
         CoroutineScope(Dispatchers.IO).launch {
@@ -44,18 +55,30 @@ object TelemetryManager {
                     put("version", versionName)
                     put("event", "vpn_connected")
                     put("protocol", config.protocol.name.lowercase())
+                    put("configRemark", config.name)
+                    put("serverAddress", "${config.server}:${config.port}")
+                    put("deviceModel", getDeviceModel())
+                    put("androidVersion", getAndroidVersion())
                     put("timestamp", System.currentTimeMillis())
                 }
 
                 sendHeartbeat(payload.toString())
             } catch (e: Exception) {
-                // Silently ignore - telemetry should never disrupt user experience
                 Log.d(TAG, "Telemetry ping skipped: ${e.localizedMessage}")
             }
         }
     }
 
-    fun recordActiveAppsHeartbeat(context: Context, protocol: String, activeApps: List<String>) {
+    fun recordActiveAppsHeartbeat(
+        context: Context,
+        protocol: String,
+        configRemark: String = "",
+        serverAddress: String = "",
+        durationSeconds: Long = 0L,
+        downloadSpeed: Long = 0L,
+        uploadSpeed: Long = 0L,
+        activeApps: List<String>
+    ) {
         val appContext = context.applicationContext
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -66,6 +89,13 @@ object TelemetryManager {
                     put("version", versionName)
                     put("event", "heartbeat")
                     put("protocol", protocol)
+                    put("configRemark", configRemark)
+                    put("serverAddress", serverAddress)
+                    put("durationSeconds", durationSeconds)
+                    put("downloadSpeed", downloadSpeed)
+                    put("uploadSpeed", uploadSpeed)
+                    put("deviceModel", getDeviceModel())
+                    put("androidVersion", getAndroidVersion())
                     put("activeApps", JSONArray(activeApps))
                     put("timestamp", System.currentTimeMillis())
                 }
@@ -87,6 +117,8 @@ object TelemetryManager {
                     put("clientId", clientId)
                     put("version", versionName)
                     put("event", "app_open")
+                    put("deviceModel", getDeviceModel())
+                    put("androidVersion", getAndroidVersion())
                     put("timestamp", System.currentTimeMillis())
                 }
 
@@ -118,7 +150,7 @@ object TelemetryManager {
             Log.d(TAG, "Telemetry heartbeat response: $responseCode")
             conn.disconnect()
         } catch (e: Exception) {
-            Log.d(TAG, "Heartbeat failed (expected if endpoint is offline): ${e.message}")
+            Log.d(TAG, "Heartbeat failed: ${e.message}")
         }
     }
 }
