@@ -17,8 +17,7 @@ module.exports = async (req, res) => {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const { clientId, version, protocol, activeApps, event } = body;
-
-    recordHeartbeat(clientId, version, protocol, activeApps, event);
+    await recordHeartbeat(clientId, version, protocol, activeApps, event);
 
     return res.status(200).json({ status: 'ok', timestamp: Date.now() });
   } catch (e) {

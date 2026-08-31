@@ -19,6 +19,6 @@ module.exports = async (req, res) => {
     });
   }
 
-  const stats = getStats();
+  const stats = await getStats();
   return res.status(200).json(stats);
 };
