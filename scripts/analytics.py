@@ -22,7 +22,7 @@ RESET = "\033[0m"
 PROJECT_ROOT = Path(__file__).parent.parent
 TOKEN_FILE = PROJECT_ROOT / ".github_token"
 REPO = "PsyChoDev14/ZeroTrace"
-TELEMETRY_API = "https://zerotrace-telemetry.nexauracore.workers.dev/api/stats"
+TELEMETRY_API = "https://server-omega-blue.vercel.app/api/stats"
 ADMIN_KEY = os.environ.get("ADMIN_SECRET", "zerotrace_admin_secret_2026")
 
 def print_banner():
@@ -149,7 +149,7 @@ def main():
 
     print("─" * 70)
     print(f"\n{PURPLE}💡 Tip:{RESET} Run {BOLD}./analytics.sh{RESET} anytime to monitor live usage & connected apps.")
-    print(f"{PURPLE}🌐 Live Admin Web Dashboard:{RESET} https://zerotrace-telemetry.nexauracore.workers.dev/admin?key={ADMIN_KEY}\n")
+    print(f"{PURPLE}🌐 Live Admin Web Dashboard:{RESET} https://server-omega-blue.vercel.app/admin?key={ADMIN_KEY}\n")
 
 if __name__ == "__main__":
     main()

@@ -1,9 +1,9 @@
 {
-  "versionCode": 8,
-  "versionName": "1.0.7",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.7/ZeroTrace-v1.0.7-arm64.apk",
-  "changelog": "\u2022 Biometric App Lock: Secure app with Fingerprint, Face ID & PIN\n\u2022 Auto-relock on app backgrounding & switching\n\u2022 DNS resolver optimization & AdGuard leak prevention\n\u2022 Per-App Split Tunneling (Bypass Banking apps, PickMe, Uber)\n\u2022 Quick Settings Notification Tile with in-app 1-tap guide",
+  "versionCode": 9,
+  "versionName": "1.0.8",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.0.8/ZeroTrace-v1.0.8-arm64.apk",
+  "changelog": "\u2022 Ultra-fast 120 FPS list scrolling & pre-cached image engine\n\u2022 High-priority system push notifications for new updates\n\u2022 Compose UI responsiveness & memory footprint optimizations\n\u2022 Enhanced stability & background telemetry pipeline",
   "forceUpdate": false,
-  "releaseDate": "2026-08-30",
+  "releaseDate": "2026-08-31",
   "minSupportedVersion": 1
 }

@@ -19,9 +19,9 @@ object TelemetryManager {
     private const val PREFS_NAME = "zerotrace_telemetry_prefs"
     private const val KEY_CLIENT_ID = "anonymous_client_id"
 
-    // Telemetry Endpoint (Swappable with custom Cloudflare worker or API)
+    // Live Telemetry Endpoint (Vercel / Cloudflare Worker)
     @Volatile
-    var telemetryEndpoint: String = "https://zerotrace-telemetry.nexauracore.workers.dev/api/heartbeat"
+    var telemetryEndpoint: String = "https://server-omega-blue.vercel.app/api/heartbeat"
 
     private fun getOrCreateClientId(context: Context): String {
         val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

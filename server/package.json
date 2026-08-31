@@ -1,0 +1,11 @@
+{
+  "name": "zerotrace-telemetry-server",
+  "version": "1.0.8",
+  "description": "ZeroTrace VPN - Private Telemetry & Live Connected Apps Monitor",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {}
+}
