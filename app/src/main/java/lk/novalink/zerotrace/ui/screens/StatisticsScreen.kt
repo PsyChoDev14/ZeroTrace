@@ -285,12 +285,220 @@ fun StatisticsScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Live Connected Apps Section
+        LiveAppTrafficSection()
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = "Counters are measured locally on device and persisted securely in app storage.",
             fontSize = 11.5.sp,
             color = ZtTextFaint
+        )
+    }
+}
+
+@Composable
+private fun LiveAppTrafficSection() {
+    var showSheet by remember { mutableStateOf(false) }
+    val liveApps by lk.novalink.zerotrace.core.LiveAppTrafficManager.liveApps.collectAsState()
+    val activeCount by lk.novalink.zerotrace.core.LiveAppTrafficManager.activeAppsCount.collectAsState()
+    val activeOrSessionApps = remember(liveApps) {
+        liveApps.filter { it.isActiveNow || it.totalSessionBytes > 0 }.take(4)
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "LIVE APP TRAFFIC",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.1.sp,
+                    color = ZtTextFaint
+                )
+                if (activeCount > 0) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0x2635C77B))
+                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "$activeCount ACTIVE",
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ZtSuccess
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = "View All (${liveApps.size}) →",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = ZtAccent,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { showSheet = true }
+                    .padding(4.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        if (activeOrSessionApps.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(ZtSurface)
+                    .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
+                    .clickable { showSheet = true }
+                    .padding(vertical = 18.dp, horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No active app bandwidth right now",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = ZtTextMuted
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Tap to inspect all installed apps & tunnel routing",
+                        fontSize = 11.sp,
+                        color = ZtTextFaint
+                    )
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(ZtSurface)
+                    .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                activeOrSessionApps.forEachIndexed { index, app ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showSheet = true }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (app.iconBitmap != null) {
+                            androidx.compose.foundation.Image(
+                                bitmap = app.iconBitmap,
+                                contentDescription = app.appName,
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(ZtSurface2),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = app.appName.take(1).uppercase(),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = ZtAccent
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = app.appName,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = ZtText,
+                                    maxLines = 1
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                if (app.isTunneled) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(Color(0x2635C77B))
+                                            .padding(horizontal = 3.dp, vertical = 0.5.dp)
+                                    ) {
+                                        Text("VPN", fontSize = 7.5.sp, fontWeight = FontWeight.Bold, color = ZtSuccess)
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(Color(0x26FF9500))
+                                            .padding(horizontal = 3.dp, vertical = 0.5.dp)
+                                    ) {
+                                        Text("BYPASS", fontSize = 7.5.sp, fontWeight = FontWeight.Bold, color = ZtWarn)
+                                    }
+                                }
+                            }
+                            Text(
+                                text = if (app.totalSessionBytes > 0) "Session: ${app.formatBytes(app.totalSessionBytes)}" else app.packageName,
+                                fontSize = 10.sp,
+                                color = ZtTextFaint,
+                                maxLines = 1
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            if (app.isActiveNow) {
+                                Text(
+                                    text = "↓ ${app.formatSpeed(app.downloadSpeed)}",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ZtSuccess
+                                )
+                            } else {
+                                Text(
+                                    text = "IDLE",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 9.5.sp,
+                                    color = ZtTextFaint
+                                )
+                            }
+                        }
+                    }
+
+                    if (index < activeOrSessionApps.size - 1) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(ZtBorder)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSheet) {
+        lk.novalink.zerotrace.ui.components.LiveConnectedAppsSheet(
+            onDismiss = { showSheet = false }
         )
     }
 }
