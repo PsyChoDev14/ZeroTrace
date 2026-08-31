@@ -98,6 +98,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val currentVersionName = remember(context) { lk.novalink.zerotrace.core.UpdateManager.getCurrentVersionName(context) }
+    val currentVersionCode = remember(context) { lk.novalink.zerotrace.core.UpdateManager.getCurrentVersionCode(context) }
     val scrollState = rememberScrollState()
 
     var dnsExpanded by remember { mutableStateOf(false) }
@@ -528,7 +530,7 @@ fun SettingsScreen(
 
             SupportButton(
                 title = "Check for Updates",
-                subtitle = "v1.0.5 • Tap to check latest release",
+                subtitle = "v$currentVersionName • Tap to check latest release",
                 icon = Icons.Default.CloudDownload,
                 iconTint = ZtAccent,
                 onClick = onCheckUpdatesClick
@@ -584,7 +586,7 @@ fun SettingsScreen(
                                 color = ZtText
                             )
                             Text(
-                                text = "Version 1.0.5 (Build 6)",
+                                text = "Version $currentVersionName (Build $currentVersionCode)",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 color = ZtTextMuted

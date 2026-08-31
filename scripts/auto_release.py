@@ -13,14 +13,14 @@ DIST_DIR = PROJECT_ROOT / "dist"
 TOKEN_FILE = PROJECT_ROOT / ".github_token"
 REPO = "PsyChoDev14/ZeroTrace"
 
-TAG_NAME = "v1.0.9"
-VERSION_CODE = 10
-VERSION_NAME = "1.0.9"
-CHANGELOG = """• Real-time device hardware model & config remark reporting
+TAG_NAME = "v1.1.0"
+VERSION_CODE = 11
+VERSION_NAME = "1.1.0"
+CHANGELOG = """• Fixed dynamic version display in Settings & About screens
+• Real-time device hardware model & config remark reporting
 • Ultra-fast 120 FPS list scrolling & pre-cached image engine
 • High-priority system push notifications for new updates
-• Compose UI responsiveness & memory footprint optimizations
-• Enhanced stability & background telemetry pipeline"""
+• Compose UI responsiveness & memory footprint optimizations"""
 
 def run(cmd):
     print(f"==> {cmd}")
@@ -56,7 +56,7 @@ def main():
 
     # 2. Git Commit & Tag
     token = TOKEN_FILE.read_text().strip() if TOKEN_FILE.exists() else ""
-    run("git add app/build.gradle.kts version.json scripts/ public/ api/ lib/ server/")
+    run("git add app/ version.json scripts/ public/ api/ lib/ server/")
     subprocess.run(f'git commit -m "Release {TAG_NAME} (build {VERSION_CODE})"', shell=True, cwd=PROJECT_ROOT)
     subprocess.run(f'git tag -d {TAG_NAME} 2>/dev/null || true', shell=True, cwd=PROJECT_ROOT)
     run(f'git tag -a {TAG_NAME} -m "ZeroTrace {TAG_NAME}"')
@@ -85,25 +85,18 @@ def main():
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            upload_url = data.get("upload_url", "").split("{")[0]
+            release_id = data.get("id")
             html_url = data.get("html_url", "")
-            print(f"✅ Created Release: {html_url}")
+            print(f"✅ Created Release: {html_url} (ID: {release_id})")
 
-            # Upload APK Binary Asset
-            print(f"Uploading APK asset to {upload_url}...")
-            upload_apk_url = f"{upload_url}?name={dest_apk.name}"
-            apk_bytes = dest_apk.read_bytes()
-            upload_headers = {
-                "User-Agent": "ZeroTrace-Automator",
-                "Authorization": f"token {token}",
-                "Content-Type": "application/vnd.android.package-archive",
-                "Content-Length": str(len(apk_bytes))
-            }
-            upload_req = urllib.request.Request(upload_apk_url, data=apk_bytes, headers=upload_headers, method="POST")
-            with urllib.request.urlopen(upload_req, timeout=300) as up_resp:
-                up_data = json.loads(up_resp.read().decode("utf-8"))
-                download_url = up_data.get("browser_download_url", "")
-                print(f"🎉 Asset Uploaded Successfully: {download_url}")
+            # Upload APK binary with curl
+            print(f"Uploading APK asset...")
+            upload_cmd = f'curl -s -X POST -H "Authorization: token {token}" -H "Content-Type: application/vnd.android.package-archive" -H "Accept: application/vnd.github.v3+json" --data-binary "@{dest_apk}" "https://uploads.github.com/repos/{REPO}/releases/{release_id}/assets?name={dest_apk.name}"'
+            upload_res = subprocess.run(upload_cmd, shell=True, text=True, capture_output=True)
+            if upload_res.returncode == 0:
+                print(f"🎉 Asset Uploaded Successfully!")
+            else:
+                print(f"Upload error: {upload_res.stderr}")
 
     except urllib.error.HTTPError as e:
         print(f"GitHub API Error: {e.code} - {e.read().decode('utf-8')}")

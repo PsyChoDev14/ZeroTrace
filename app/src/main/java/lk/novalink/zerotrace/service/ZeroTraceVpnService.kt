@@ -189,6 +189,8 @@ class ZeroTraceVpnService : VpnService() {
         monitorJob = serviceScope.launch {
             var lastRx = 0L
             var lastTx = 0L
+            var latestDownSpeed = 0L
+            var latestUpSpeed = 0L
             var heartbeatTick = 0
 
             while (isActive) {
@@ -199,14 +201,14 @@ class ZeroTraceVpnService : VpnService() {
                         val currentRx = stats[0]
                         val currentTx = stats[1]
 
-                        val downSpeed = if (lastRx > 0 && currentRx >= lastRx) currentRx - lastRx else 0L
-                        val upSpeed = if (lastTx > 0 && currentTx >= lastTx) currentTx - lastTx else 0L
+                        latestDownSpeed = if (lastRx > 0 && currentRx >= lastRx) currentRx - lastRx else 0L
+                        latestUpSpeed = if (lastTx > 0 && currentTx >= lastTx) currentTx - lastTx else 0L
 
                         lastRx = currentRx
                         lastTx = currentTx
 
-                        VpnTunnelManager.updateSpeed(downSpeed, upSpeed)
-                        statsRepo?.addTraffic(downSpeed, upSpeed)
+                        VpnTunnelManager.updateSpeed(latestDownSpeed, latestUpSpeed)
+                        statsRepo?.addTraffic(latestDownSpeed, latestUpSpeed)
                         statsRepo?.addUptimeSecond()
                     }
 
@@ -220,7 +222,7 @@ class ZeroTraceVpnService : VpnService() {
                         val protocolStr = currentConfig?.protocol?.name?.lowercase() ?: "vpn"
                         val remarkStr = currentConfig?.name ?: "Direct Tunnel"
                         val srvStr = currentConfig?.let { "${it.server}:${it.port}" } ?: ""
-                        val uptimeSec = statsRepo?.liveTrafficData?.value?.connectionSeconds ?: 0L
+                        val uptimeSec = statsRepo?.todayStats?.value?.connectionSeconds ?: 0L
 
                         lk.novalink.zerotrace.core.TelemetryManager.recordActiveAppsHeartbeat(
                             context = this@ZeroTraceVpnService,
@@ -228,8 +230,8 @@ class ZeroTraceVpnService : VpnService() {
                             configRemark = remarkStr,
                             serverAddress = srvStr,
                             durationSeconds = uptimeSec,
-                            downloadSpeed = downSpeed,
-                            uploadSpeed = upSpeed,
+                            downloadSpeed = latestDownSpeed,
+                            uploadSpeed = latestUpSpeed,
                             activeApps = activeAppNames
                         )
                     }
