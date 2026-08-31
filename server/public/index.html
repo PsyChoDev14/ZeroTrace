@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroTrace VPN • Live Telemetry & Connected Apps</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #07090e; color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; min-height: 100vh; display: flex; flex-direction: column; }
+    .container { max-width: 900px; margin: 0 auto; width: 100%; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #1f293d; }
+    .title { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: #35c77b; }
+    .badge { background: rgba(53, 199, 123, 0.15); color: #35c77b; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 1px solid rgba(53, 199, 123, 0.3); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: #0f1422; border: 1px solid #1f293d; border-radius: 16px; padding: 18px; position: relative; overflow: hidden; }
+    .card-label { font-size: 11px; font-weight: 700; color: #6b7280; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .card-value { font-size: 32px; font-weight: 800; font-family: monospace; color: #ffffff; }
+    .section-title { font-size: 14px; font-weight: 700; color: #9ca3af; letter-spacing: 0.8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .app-table { width: 100%; border-collapse: collapse; background: #0f1422; border: 1px solid #1f293d; border-radius: 16px; overflow: hidden; margin-bottom: 24px; }
+    .app-table th { background: #151c2e; padding: 12px 16px; text-align: left; font-size: 11px; color: #9ca3af; text-transform: uppercase; }
+    .app-table td { padding: 12px 16px; border-top: 1px solid #1a2236; font-size: 13px; }
+    .app-bar { height: 6px; background: #35c77b; border-radius: 3px; margin-top: 4px; }
+    .live-dot { width: 8px; height: 8px; background: #35c77b; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
+    .auth-card { background: #0f1422; border: 1px solid #1f293d; border-radius: 16px; padding: 32px; text-align: center; max-width: 420px; margin: 60px auto; }
+    .auth-input { background: #07090e; border: 1px solid #2a3656; color: #fff; padding: 12px 16px; border-radius: 10px; width: 100%; font-size: 14px; margin-top: 16px; outline: none; }
+    .auth-btn { background: #35c77b; color: #000; font-weight: 700; border: none; padding: 12px 24px; border-radius: 10px; width: 100%; margin-top: 14px; cursor: pointer; font-size: 14px; }
+    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Auth Gate -->
+    <div id="auth-box" class="auth-card">
+      <div style="font-size: 32px; margin-bottom: 12px;">🛡️</div>
+      <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">ZeroTrace Admin Telemetry</h2>
+      <p style="color: #6b7280; font-size: 12px;">Enter your admin secret key to view live connected apps & active users:</p>
+      <input type="password" id="secret-key" class="auth-input" placeholder="Enter Admin Secret..." value="zerotrace_admin_secret_2026">
+      <button class="auth-btn" onclick="unlockDashboard()">Unlock Live Dashboard</button>
+      <div id="auth-err" style="color: #ff453a; font-size: 12px; margin-top: 10px; display: none;">Invalid Secret Key</div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dash-box" style="display: none;">
+      <div class="header">
+        <div class="title">
+          <span class="live-dot"></span>
+          <span>ZeroTrace VPN Admin Telemetry</span>
+        </div>
+        <div class="badge">LIVE PRIVATE VIEW</div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-label">🟢 Live Connected Devices</div>
+          <div class="card-value" id="val-live" style="color:#35c77b;">0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">📅 Daily Active Users (DAU)</div>
+          <div class="card-value" id="val-dau">0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">⚡ Total Tunnel Connections</div>
+          <div class="card-value" id="val-total">0</div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span>📱 LIVE RUNNING APPS CONNECTED ACROSS DEVICES</span>
+      </div>
+
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th>Application Name</th>
+            <th>Active Devices Routing Traffic</th>
+            <th style="width: 35%;">Bandwidth Share</th>
+          </tr>
+        </thead>
+        <tbody id="live-apps-body">
+          <tr><td colspan="3" style="text-align:center; color:#6b7280; padding:24px;">No active device traffic at this second. Open the app to see live apps appear!</td></tr>
+        </tbody>
+      </table>
+
+      <div style="text-align:center; color:#4b5563; font-size:11px; margin-top:20px;">
+        ZeroTrace Private Telemetry Engine • Auto-refreshing every 3 seconds
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let adminKey = localStorage.getItem('zt_admin_key') || new URLSearchParams(window.location.search).get('key') || '';
+
+    if (adminKey) {
+      document.getElementById('secret-key').value = adminKey;
+      unlockDashboard();
+    }
+
+    function unlockDashboard() {
+      const inputKey = document.getElementById('secret-key').value.trim();
+      if (!inputKey) return;
+      adminKey = inputKey;
+      localStorage.setItem('zt_admin_key', adminKey);
+
+      fetchStats().then(ok => {
+        if (ok) {
+          document.getElementById('auth-box').style.display = 'none';
+          document.getElementById('dash-box').style.display = 'block';
+          setInterval(fetchStats, 3000);
+        } else {
+          document.getElementById('auth-err').style.display = 'block';
+        }
+      });
+    }
+
+    async function fetchStats() {
+      try {
+        const res = await fetch('/api/stats?key=' + encodeURIComponent(adminKey));
+        if (res.status === 401) return false;
+        const data = await res.json();
+        
+        document.getElementById('val-live').innerText = data.liveUsers || 0;
+        document.getElementById('val-dau').innerText = data.todayUsers || 0;
+        document.getElementById('val-total').innerText = data.totalConnections || 0;
+
+        const tbody = document.getElementById('live-apps-body');
+        if (data.liveConnectedApps && data.liveConnectedApps.length > 0) {
+          const maxCount = Math.max(...data.liveConnectedApps.map(a => a.count), 1);
+          tbody.innerHTML = data.liveConnectedApps.map(app => {
+            const pct = Math.round((app.count / maxCount) * 100);
+            return '<tr>' +
+              '<td style="font-weight:600; color:#fff;">' + app.name + '</td>' +
+              '<td><span style="color:#35c77b; font-weight:700; font-family:monospace;">' + app.count + ' active</span></td>' +
+              '<td><div style="display:flex; align-items:center; gap:8px;">' +
+              '<div style="flex:1; background:#1a2236; height:6px; border-radius:3px; overflow:hidden;">' +
+              '<div class="app-bar" style="width:' + pct + '%;"></div></div>' +
+              '<span style="font-size:10px; color:#9ca3af; font-family:monospace;">' + pct + '%</span></div></td>' +
+              '</tr>';
+          }).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#6b7280; padding:24px;">No client app traffic reported right now. When users connect with apps, they appear here live!</td></tr>';
+        }
+        return true;
+      } catch (e) {
+        console.error(e);
+        return false;
+      }
+    }
+  </script>
+</body>
+</html>

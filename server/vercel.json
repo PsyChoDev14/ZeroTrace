@@ -1,6 +1,10 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index.js" }
+    { "source": "/api/heartbeat", "destination": "/api/heartbeat.js" },
+    { "source": "/api/stats", "destination": "/api/stats.js" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/", "destination": "/index.html" }
   ]
 }
