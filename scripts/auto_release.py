@@ -13,10 +13,11 @@ DIST_DIR = PROJECT_ROOT / "dist"
 TOKEN_FILE = PROJECT_ROOT / ".github_token"
 REPO = "PsyChoDev14/ZeroTrace"
 
-TAG_NAME = "v1.0.8"
-VERSION_CODE = 9
-VERSION_NAME = "1.0.8"
-CHANGELOG = """• Ultra-fast 120 FPS list scrolling & pre-cached image engine
+TAG_NAME = "v1.0.9"
+VERSION_CODE = 10
+VERSION_NAME = "1.0.9"
+CHANGELOG = """• Real-time device hardware model & config remark reporting
+• Ultra-fast 120 FPS list scrolling & pre-cached image engine
 • High-priority system push notifications for new updates
 • Compose UI responsiveness & memory footprint optimizations
 • Enhanced stability & background telemetry pipeline"""
@@ -43,9 +44,7 @@ def main():
     dest_apk = DIST_DIR / f"ZeroTrace-{TAG_NAME}-arm64.apk"
 
     if not src_apk.exists():
-        # Fallback check
         apks = list((PROJECT_ROOT / "app" / "build" / "outputs" / "apk" / "release").glob("*.apk"))
-        print(f"Available APKs: {[a.name for a in apks]}")
         for a in apks:
             if "arm64" in a.name:
                 src_apk = a
@@ -57,7 +56,7 @@ def main():
 
     # 2. Git Commit & Tag
     token = TOKEN_FILE.read_text().strip() if TOKEN_FILE.exists() else ""
-    run("git add app/build.gradle.kts version.json scripts/ server/")
+    run("git add app/build.gradle.kts version.json scripts/ public/ api/ lib/ server/")
     subprocess.run(f'git commit -m "Release {TAG_NAME} (build {VERSION_CODE})"', shell=True, cwd=PROJECT_ROOT)
     subprocess.run(f'git tag -d {TAG_NAME} 2>/dev/null || true', shell=True, cwd=PROJECT_ROOT)
     run(f'git tag -a {TAG_NAME} -m "ZeroTrace {TAG_NAME}"')
@@ -90,7 +89,8 @@ def main():
             html_url = data.get("html_url", "")
             print(f"✅ Created Release: {html_url}")
 
-            # Upload APK
+            # Upload APK Binary Asset
+            print(f"Uploading APK asset to {upload_url}...")
             upload_apk_url = f"{upload_url}?name={dest_apk.name}"
             apk_bytes = dest_apk.read_bytes()
             upload_headers = {
