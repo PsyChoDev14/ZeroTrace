@@ -3,14 +3,8 @@ package lk.novalink.zerotrace.core
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.net.TrafficStats
 import android.util.Log
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,8 +42,6 @@ object LiveAppTrafficManager {
         val packageName: String,
         val appName: String,
         val uid: Int,
-        val icon: Drawable?,
-        val iconBitmap: ImageBitmap?,
         val isSystemApp: Boolean
     )
 
@@ -120,8 +112,6 @@ object LiveAppTrafficManager {
                                 packageName = cached.packageName,
                                 appName = cached.appName,
                                 uid = uid,
-                                icon = cached.icon,
-                                iconBitmap = cached.iconBitmap,
                                 downloadSpeed = deltaRx,
                                 uploadSpeed = deltaTx,
                                 sessionDownloadBytes = tracker.sessionRxBytes,
@@ -196,27 +186,11 @@ object LiveAppTrafficManager {
                         pkg.packageName
                     }
 
-                    val iconDrawable = try {
-                        pm.getApplicationIcon(pkg)
-                    } catch (e: Exception) {
-                        null
-                    }
-
-                    val iconBitmap = iconDrawable?.let {
-                        try {
-                            drawableToBitmap(it).asImageBitmap()
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
-
                     list.add(
                         CachedApp(
                             packageName = pkg.packageName,
                             appName = appName,
                             uid = pkg.uid,
-                            icon = iconDrawable,
-                            iconBitmap = iconBitmap,
                             isSystemApp = isSystem
                         )
                     )
@@ -226,23 +200,10 @@ object LiveAppTrafficManager {
                 installedAppsCache.clear()
                 installedAppsCache.addAll(list)
                 isAppCacheLoaded = true
-                Log.d(TAG, "Cached ${list.size} installed apps for live traffic monitoring")
+                Log.d(TAG, "Cached ${list.size} installed apps for background telemetry monitoring")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load installed apps", e)
             }
         }
-    }
-
-    private fun drawableToBitmap(drawable: Drawable): Bitmap {
-        if (drawable is BitmapDrawable && drawable.bitmap != null) {
-            return drawable.bitmap
-        }
-        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 48
-        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 48
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        return bitmap
     }
 }

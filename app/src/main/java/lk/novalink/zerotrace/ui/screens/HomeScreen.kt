@@ -100,7 +100,6 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     var uptimeSeconds by remember { mutableLongStateOf(0L) }
-    var showLiveAppsSheet by remember { mutableStateOf(false) }
     LaunchedEffect(vpnState) {
         if (vpnState is VpnState.Connected) {
             uptimeSeconds = 0L
@@ -475,130 +474,9 @@ fun HomeScreen(
                     )
                 }
             }
-
-            // Live Connected Apps Card (Visible when VPN is connected)
-            if (isConnected) {
-                Spacer(modifier = Modifier.height(10.dp))
-                LiveConnectedAppsCard(
-                    onClick = { showLiveAppsSheet = true }
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(90.dp))
-    }
-
-    if (showLiveAppsSheet) {
-        lk.novalink.zerotrace.ui.components.LiveConnectedAppsSheet(
-            onDismiss = { showLiveAppsSheet = false },
-            onNavigateToSplitTunneling = onNavigateToSettings
-        )
-    }
-}
-
-@Composable
-private fun LiveConnectedAppsCard(
-    onClick: () -> Unit
-) {
-    val activeCount by lk.novalink.zerotrace.core.LiveAppTrafficManager.activeAppsCount.collectAsState()
-    val topApps by lk.novalink.zerotrace.core.LiveAppTrafficManager.topActiveApps.collectAsState()
-
-    val pulse = rememberInfiniteTransition(label = "pulse")
-    val dotAlpha by pulse.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "radarDot"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(ZtSurface)
-            .border(1.dp, if (activeCount > 0) ZtAccent.copy(alpha = 0.6f) else ZtBorder, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Pulsing Live Indicator Icon
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(ZtAccentSoft),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Public,
-                contentDescription = "Live Apps",
-                tint = ZtAccent,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .clip(CircleShape)
-                        .background(ZtSuccess.copy(alpha = dotAlpha))
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Live Connected Apps",
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = ZtText
-                )
-                if (activeCount > 0) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0x2635C77B))
-                            .padding(horizontal = 5.dp, vertical = 1.dp)
-                    ) {
-                        Text(
-                            text = "$activeCount ACTIVE",
-                            fontSize = 8.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ZtSuccess
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            val subtitleText = if (topApps.isNotEmpty()) {
-                val names = topApps.take(2).joinToString(", ") { it.appName }
-                if (topApps.size > 2) "$names +${topApps.size - 2} more" else names
-            } else {
-                "Tap to view real-time app bandwidth"
-            }
-
-            Text(
-                text = subtitleText,
-                fontSize = 11.5.sp,
-                color = if (activeCount > 0) ZtAccent else ZtTextMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-            contentDescription = "Open",
-            tint = ZtTextFaint,
-            modifier = Modifier.size(12.dp)
-        )
     }
 }
 
