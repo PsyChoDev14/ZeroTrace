@@ -1,0 +1,13 @@
+app
+gradle
+.gradle
+dist
+server
+scripts
+media
+*.apk
+*.aab
+*.jar
+*.md
+.git
+.github
