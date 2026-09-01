@@ -11,7 +11,7 @@
 
 <br/>
 
-[📥 **Download Latest APK (v1.0.6)**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest/download/ZeroTrace-v1.0.6-arm64.apk) • [✨ **Features**](#-key-features) • [🚀 **Getting Started**](#-getting-started) • [💻 **Tech Stack**](#-tech-stack--architecture)
+[📥 **Download Latest APK**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest) • [✨ **Features**](#-key-features) • [🚀 **Getting Started**](#-getting-started) • [💻 **Tech Stack**](#-tech-stack--architecture)
 
 ---
 
@@ -81,7 +81,7 @@
 ## 🚀 Getting Started
 
 ### 1. Installation
-1. Download the latest release: [**ZeroTrace-v1.0.6-arm64.apk**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest/download/ZeroTrace-v1.0.6-arm64.apk)
+1. Download the latest release: [**ZeroTrace Latest Release (arm64-v8a)**](https://github.com/PsyChoDev14/ZeroTrace/releases/latest)
 2. Open the file on your Android device and tap **Install**.
 
 ### 2. Adding a Server Configuration
