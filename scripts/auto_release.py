@@ -13,14 +13,14 @@ DIST_DIR = PROJECT_ROOT / "dist"
 TOKEN_FILE = PROJECT_ROOT / ".github_token"
 REPO = "PsyChoDev14/ZeroTrace"
 
-TAG_NAME = "v1.1.0"
-VERSION_CODE = 11
-VERSION_NAME = "1.1.0"
-CHANGELOG = """• Fixed dynamic version display in Settings & About screens
-• Real-time device hardware model & config remark reporting
-• Ultra-fast 120 FPS list scrolling & pre-cached image engine
-• High-priority system push notifications for new updates
-• Compose UI responsiveness & memory footprint optimizations"""
+TAG_NAME = "v1.2.0"
+VERSION_CODE = 12
+VERSION_NAME = "1.2.0"
+CHANGELOG = """• Aggressive DPI Bypass & Stealth Tunneling Engine
+• Smart TLS ClientHello Packet Fragmentation to defeat SNI filtering
+• Mux.Cool Stream Multiplexing for anti-throttling & low jitter
+• uTLS Browser Fingerprint Camouflage (Chrome, Safari, Firefox, iOS)
+• Dynamic version rendering & per-app routing enhancements"""
 
 def run(cmd):
     print(f"==> {cmd}")

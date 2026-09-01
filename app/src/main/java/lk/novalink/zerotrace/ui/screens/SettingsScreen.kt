@@ -84,12 +84,18 @@ fun SettingsScreen(
     primaryDns: String,
     bypassLan: Boolean,
     sriLankaSni: String,
+    dpiBypassMode: lk.novalink.zerotrace.data.model.DpiBypassMode = lk.novalink.zerotrace.data.model.DpiBypassMode.SMART_FRAGMENT,
+    utlsFingerprint: String = "chrome",
+    muxEnabled: Boolean = false,
     splitTunnelMode: SplitTunnelMode = SplitTunnelMode.OFF,
     splitTunnelCount: Int = 0,
     biometricEnabled: Boolean = false,
     onDnsChange: (String) -> Unit,
     onBypassLanChange: (Boolean) -> Unit,
     onSriLankaSniChange: (String) -> Unit,
+    onDpiModeChange: (lk.novalink.zerotrace.data.model.DpiBypassMode) -> Unit = {},
+    onUtlsFingerprintChange: (String) -> Unit = {},
+    onMuxChange: (Boolean) -> Unit = {},
     onToggleBiometric: (Boolean) -> Unit = {},
     onNavigateToSplitTunneling: () -> Unit = {},
     onCheckUpdatesClick: () -> Unit,
@@ -103,6 +109,8 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
 
     var dnsExpanded by remember { mutableStateOf(false) }
+    var dpiExpanded by remember { mutableStateOf(false) }
+    var utlsExpanded by remember { mutableStateOf(false) }
     var showTileGuideDialog by remember { mutableStateOf(false) }
 
     if (showTileGuideDialog) {
@@ -509,7 +517,222 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // SECTION 2: UPDATES & SUPPORT
+        // SECTION 2: DPI & STEALTH ENGINE
+        SectionHeader(title = "DPI & STEALTH ENGINE")
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // DPI Bypass Mode Card
+            SettingsCard {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = "DPI Bypass",
+                                tint = ZtAccent,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Anti-DPI / Censorship Bypass",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = ZtText
+                            )
+                        }
+
+                        if (dpiBypassMode != lk.novalink.zerotrace.data.model.DpiBypassMode.OFF) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(5.dp))
+                                    .background(Color(0x2635C77B))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (dpiBypassMode == lk.novalink.zerotrace.data.model.DpiBypassMode.DEEP_STEALTH) "STEALTH MAX" else "ACTIVE",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ZtSuccess
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    ExposedDropdownMenuBox(
+                        expanded = dpiExpanded,
+                        onExpandedChange = { dpiExpanded = !dpiExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = dpiBypassMode.title,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dpiExpanded) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ZtAccent,
+                                unfocusedBorderColor = ZtBorder,
+                                focusedTextColor = ZtText,
+                                unfocusedTextColor = ZtText
+                            ),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = dpiExpanded,
+                            onDismissRequest = { dpiExpanded = false },
+                            modifier = Modifier.background(ZtSurface2)
+                        ) {
+                            lk.novalink.zerotrace.data.model.DpiBypassMode.values().forEach { mode ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                            Text(mode.title, color = ZtText, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                            Text(mode.description, color = ZtTextMuted, fontSize = 10.5.sp)
+                                        }
+                                    },
+                                    onClick = {
+                                        onDpiModeChange(mode)
+                                        dpiExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // uTLS Browser Camouflage Profile
+            SettingsCard {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Language,
+                                contentDescription = "uTLS Camouflage",
+                                tint = ZtAccent,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "uTLS Browser Fingerprint",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = ZtText
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val uTlsProfiles = listOf("chrome", "safari", "firefox", "ios", "randomized")
+                    ExposedDropdownMenuBox(
+                        expanded = utlsExpanded,
+                        onExpandedChange = { utlsExpanded = !utlsExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = utlsFingerprint.replaceFirstChar { it.uppercase() },
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = utlsExpanded) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ZtAccent,
+                                unfocusedBorderColor = ZtBorder,
+                                focusedTextColor = ZtText,
+                                unfocusedTextColor = ZtText
+                            ),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = utlsExpanded,
+                            onDismissRequest = { utlsExpanded = false },
+                            modifier = Modifier.background(ZtSurface2)
+                        ) {
+                            uTlsProfiles.forEach { fp ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = fp.replaceFirstChar { it.uppercase() },
+                                            color = ZtText,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    },
+                                    onClick = {
+                                        onUtlsFingerprintChange(fp)
+                                        utlsExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Mux.Cool Multiplexing Switch
+            SettingsCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AltRoute,
+                            contentDescription = "Mux Multiplexing",
+                            tint = ZtAccent,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Mux.Cool Stream Multiplexing",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = ZtText
+                            )
+                            Text(
+                                text = "Multiplexes 8-16 streams into single TLS pipeline to defeat traffic burst analysis",
+                                fontSize = 11.5.sp,
+                                color = ZtTextMuted
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = muxEnabled,
+                        onCheckedChange = onMuxChange,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = ZtAccent,
+                            uncheckedTrackColor = ZtSurface2
+                        )
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // SECTION 3: UPDATES & SUPPORT
         SectionHeader(title = "UPDATES & SUPPORT")
 
         Column(

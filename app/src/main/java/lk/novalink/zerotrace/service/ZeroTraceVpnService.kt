@@ -144,13 +144,26 @@ class ZeroTraceVpnService : VpnService() {
                 val tunFd = vpnInterface!!.fd
 
                 // Start native Xray-Core and Tun2socks Bridge
+                val dpiMode = settingsRepo.dpiBypassMode.value
+                val utlsFp = settingsRepo.utlsFingerprint.value
+                val muxOn = settingsRepo.muxEnabled.value
+                val fragPkts = settingsRepo.fragmentPackets.value
+                val fragLen = settingsRepo.fragmentLength.value
+                val fragInt = settingsRepo.fragmentInterval.value
+
                 val success = XrayCoreManager.startEngine(
                     context = this,
                     vpnService = this,
                     config = config,
                     tunFd = tunFd,
                     bypassLan = bypassLan,
-                    primaryDns = primaryDns
+                    primaryDns = primaryDns,
+                    dpiBypassMode = dpiMode,
+                    utlsFingerprint = utlsFp,
+                    muxEnabled = muxOn,
+                    fragmentPackets = fragPkts,
+                    fragmentLength = fragLen,
+                    fragmentInterval = fragInt
                 )
 
                 if (success) {

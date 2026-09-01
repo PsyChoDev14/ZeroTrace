@@ -104,6 +104,9 @@ class MainActivity : FragmentActivity() {
                         val primaryDns by settingsRepo.primaryDns.collectAsState()
                         val bypassLan by settingsRepo.bypassLan.collectAsState()
                         val sriLankaSni by settingsRepo.sriLankaSniTweak.collectAsState()
+                        val dpiBypassMode by settingsRepo.dpiBypassMode.collectAsState()
+                        val utlsFingerprint by settingsRepo.utlsFingerprint.collectAsState()
+                        val muxEnabled by settingsRepo.muxEnabled.collectAsState()
                         val splitTunnelMode by settingsRepo.splitTunnelMode.collectAsState()
                         val splitTunnelApps by settingsRepo.splitTunnelApps.collectAsState()
                         val biometricEnabled by settingsRepo.biometricLockEnabled.collectAsState()
@@ -249,12 +252,18 @@ class MainActivity : FragmentActivity() {
                                             primaryDns = primaryDns,
                                             bypassLan = bypassLan,
                                             sriLankaSni = sriLankaSni,
+                                            dpiBypassMode = dpiBypassMode,
+                                            utlsFingerprint = utlsFingerprint,
+                                            muxEnabled = muxEnabled,
                                             splitTunnelMode = splitTunnelMode,
                                             splitTunnelCount = splitTunnelApps.size,
                                             biometricEnabled = biometricEnabled,
                                             onDnsChange = { settingsRepo.setPrimaryDns(it) },
                                             onBypassLanChange = { settingsRepo.setBypassLan(it) },
                                             onSriLankaSniChange = { settingsRepo.setSriLankaSniTweak(it) },
+                                            onDpiModeChange = { settingsRepo.setDpiBypassMode(it) },
+                                            onUtlsFingerprintChange = { settingsRepo.setUtlsFingerprint(it) },
+                                            onMuxChange = { settingsRepo.setMuxEnabled(it) },
                                             onToggleBiometric = { enable ->
                                                 BiometricAuthManager.authenticate(
                                                     activity = this@MainActivity,

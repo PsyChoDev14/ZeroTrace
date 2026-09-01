@@ -26,10 +26,16 @@ object XrayCoreManager {
         config: ProxyConfig,
         tunFd: Int,
         bypassLan: Boolean = true,
-        primaryDns: String = "1.1.1.1"
+        primaryDns: String = "1.1.1.1",
+        dpiBypassMode: lk.novalink.zerotrace.data.model.DpiBypassMode = lk.novalink.zerotrace.data.model.DpiBypassMode.SMART_FRAGMENT,
+        utlsFingerprint: String = "chrome",
+        muxEnabled: Boolean = false,
+        fragmentPackets: String = "tlshello",
+        fragmentLength: String = "10-30",
+        fragmentInterval: String = "10-20"
     ): Boolean {
         try {
-            Log.d(TAG, "Starting Xray Core Engine for: ${config.name}")
+            Log.d(TAG, "Starting Xray Core Engine for: ${config.name} (DPI Mode: ${dpiBypassMode.name})")
 
             // 1. Register Dialer Controller to protect outbound sockets from looping inside the VPN
             try {
@@ -57,7 +63,13 @@ object XrayCoreManager {
                 socksPort = SOCKS_PORT,
                 httpPort = HTTP_PORT,
                 bypassLan = bypassLan,
-                primaryDns = primaryDns
+                primaryDns = primaryDns,
+                dpiBypassMode = dpiBypassMode,
+                utlsFingerprint = utlsFingerprint,
+                muxEnabled = muxEnabled,
+                fragmentPackets = fragmentPackets,
+                fragmentLength = fragmentLength,
+                fragmentInterval = fragmentInterval
             )
             configFile.writeText(xrayJson)
             Log.d(TAG, "Wrote runtime Xray JSON to: ${configFile.absolutePath}")
