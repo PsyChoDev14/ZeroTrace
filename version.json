@@ -1,8 +1,8 @@
 {
-  "versionCode": 12,
-  "versionName": "1.2.0",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.0/ZeroTrace-v1.2.0-arm64.apk",
-  "changelog": "\u2022 Aggressive DPI Bypass & Stealth Tunneling Engine\n\u2022 Smart TLS ClientHello Packet Fragmentation to defeat SNI filtering\n\u2022 Mux.Cool Stream Multiplexing for anti-throttling & low jitter\n\u2022 uTLS Browser Fingerprint Camouflage (Chrome, Safari, Firefox, iOS)\n\u2022 Dynamic version rendering & per-app routing enhancements",
+  "versionCode": 13,
+  "versionName": "1.2.1",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.1/ZeroTrace-v1.2.1-arm64.apk",
+  "changelog": "\u2022 Clean, serene Home Screen with progressive disclosure\n\u2022 Decluttered Settings with expandable Advanced Stealth Engine drawer\n\u2022 Aggressive DPI Bypass & TLS ClientHello packet fragmentation\n\u2022 Mux.Cool Stream Multiplexing & uTLS browser fingerprint camouflage\n\u2022 120 FPS Compose UI rendering & memory footprint optimizations",
   "forceUpdate": false,
   "releaseDate": "2026-09-01",
   "minSupportedVersion": 1

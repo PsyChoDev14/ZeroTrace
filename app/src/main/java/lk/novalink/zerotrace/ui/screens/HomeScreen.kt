@@ -8,8 +8,10 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -37,12 +39,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -70,20 +71,19 @@ import lk.novalink.zerotrace.ui.components.PingBadge
 import lk.novalink.zerotrace.ui.components.ProtocolBadge
 import lk.novalink.zerotrace.ui.components.ZeroTraceWordmark
 import lk.novalink.zerotrace.ui.theme.ZtAccent
+import lk.novalink.zerotrace.ui.theme.ZtAccentSoft
 import lk.novalink.zerotrace.ui.theme.ZtBg
 import lk.novalink.zerotrace.ui.theme.ZtBorder
 import lk.novalink.zerotrace.ui.theme.ZtDanger
-import lk.novalink.zerotrace.ui.theme.ZtDangerSoft
 import lk.novalink.zerotrace.ui.theme.ZtSuccess
 import lk.novalink.zerotrace.ui.theme.ZtSurface
 import lk.novalink.zerotrace.ui.theme.ZtSurface2
 import lk.novalink.zerotrace.ui.theme.ZtText
 import lk.novalink.zerotrace.ui.theme.ZtTextFaint
 import lk.novalink.zerotrace.ui.theme.ZtTextMuted
-import lk.novalink.zerotrace.ui.theme.ZtWarn
 
 /**
- * Native Jetpack Compose implementation of Home.tsx from React design system
+ * Native Jetpack Compose implementation of clean, decluttered Home Screen
  */
 @Composable
 fun HomeScreen(
@@ -134,13 +134,14 @@ fun HomeScreen(
         ) {
             ZeroTraceWordmark(showIcon = true)
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 IconButton(
                     onClick = onAddConfigClick,
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(ZtSurface2)
+                        .background(ZtSurface)
+                        .border(1.dp, ZtBorder, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -155,7 +156,8 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(ZtSurface2)
+                        .background(ZtSurface)
+                        .border(1.dp, ZtBorder, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -167,23 +169,23 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Status Chip Pill (Matches chip Record in Home.tsx)
+        // Minimal Status Pill
         StatusPill(state = vpnState)
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Central Connection Dial (268dp)
+        // Central Connection Dial
         ConnectionDial(
             state = vpnState,
             hasConfig = selectedConfig != null,
             onClick = onConnectToggle
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Center Status Subtitle Area (Matches Home.tsx)
+        // Center Status Subtitle Area with Progressive Disclosure
         AnimatedContent(
             targetState = vpnState,
             transitionSpec = {
@@ -194,19 +196,19 @@ fun HomeScreen(
         ) { state ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.height(68.dp)
+                modifier = Modifier.height(58.dp)
             ) {
                 when {
                     state is VpnState.Connected -> {
                         Text(
                             text = formatDuration(uptimeSeconds),
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 28.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Medium,
                             letterSpacing = (-0.5).sp,
                             color = ZtText
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
@@ -214,49 +216,67 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.VisibilityOff,
                                 contentDescription = null,
-                                tint = ZtTextMuted,
-                                modifier = Modifier.size(14.dp)
+                                tint = ZtSuccess,
+                                modifier = Modifier.size(13.dp)
                             )
-                            Spacer(modifier = Modifier.width(5.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "IP masked as ",
-                                fontSize = 12.5.sp,
+                                text = "Traffic Encrypted • ",
+                                fontSize = 12.sp,
                                 color = ZtTextMuted
                             )
                             Text(
                                 text = selectedConfig?.server ?: "Encrypted",
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = 12.5.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = ZtText
+                                color = ZtSuccess
                             )
                         }
                     }
                     state is VpnState.Connecting -> {
                         Text(
-                            text = "Handshaking with ${selectedConfig?.name ?: "node"}…",
-                            fontSize = 13.sp,
+                            text = "Securing Tunnel…",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ZtAccent
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Handshaking with ${selectedConfig?.name ?: "server"}",
+                            fontSize = 12.sp,
                             color = ZtTextMuted
                         )
                     }
                     state is VpnState.Error -> {
                         Text(
-                            text = "Connection failed. Retry or pick another node.",
-                            fontSize = 13.sp,
+                            text = "Connection Failed",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = ZtDanger
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Tap dial to retry or pick another node",
+                            fontSize = 12.sp,
+                            color = ZtTextMuted
                         )
                     }
                     else -> {
                         Text(
-                            text = if (selectedConfig == null) "Tap to paste a config and secure traffic" else "Tap connect to hide your traffic",
-                            fontSize = 13.sp,
-                            color = ZtTextMuted
+                            text = if (selectedConfig != null) "Ready to Connect" else "No Server Configured",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ZtText
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = if (selectedConfig != null) "Ready on ${selectedConfig.name}" else "No node configured",
+                            text = if (selectedConfig != null) "Tap the power button to protect traffic" else "Tap below to add an Xray config",
                             fontSize = 12.sp,
-                            color = ZtTextFaint
+                            color = ZtTextMuted
                         )
                     }
                 }
@@ -265,7 +285,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Active Server Node Card (Matches ServerRow on Home.tsx)
+        // Selected Server Card (Minimal, Clean Pill)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -275,16 +295,16 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(ZtSurface)
-                        .border(1.dp, ZtBorder, RoundedCornerShape(18.dp))
+                        .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
                         .clickable { onNavigateToConfigs() }
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                        .padding(horizontal = 16.dp, vertical = 13.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(ZtSurface2),
                         contentAlignment = Alignment.Center
@@ -293,7 +313,7 @@ fun HomeScreen(
                             imageVector = Icons.Default.Language,
                             contentDescription = null,
                             tint = ZtAccent,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -306,7 +326,7 @@ fun HomeScreen(
                             Text(
                                 text = selectedConfig.name,
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.5.sp,
+                                fontSize = 14.sp,
                                 color = ZtText,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -315,7 +335,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = selectedConfig.displaySubtitle,
-                            fontSize = 11.5.sp,
+                            fontSize = 11.sp,
                             color = ZtTextFaint,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -330,19 +350,7 @@ fun HomeScreen(
                             onPingClick = { onPingTest(selectedConfig) }
                         )
 
-                        if (onEditActiveConfig != null) {
-                            IconButton(
-                                onClick = onEditActiveConfig,
-                                modifier = Modifier.size(30.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit",
-                                    tint = ZtAccent,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                        }
+                        Spacer(modifier = Modifier.width(4.dp))
 
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
@@ -357,25 +365,25 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(ZtSurface)
-                        .border(1.dp, ZtBorder, RoundedCornerShape(18.dp))
+                        .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
                         .clickable { onAddConfigClick() }
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(ZtAccent.copy(alpha = 0.15f)),
+                            .background(ZtAccentSoft),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = null,
                             tint = ZtAccent,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -383,15 +391,14 @@ fun HomeScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "No Config Configured",
+                            text = "Add First Server",
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.5.sp,
+                            fontSize = 14.sp,
                             color = ZtText
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Tap to add or paste an Xray config",
-                            fontSize = 12.sp,
+                            text = "Tap to paste an Xray/VLESS link",
+                            fontSize = 11.5.sp,
                             color = ZtAccent
                         )
                     }
@@ -405,73 +412,72 @@ fun HomeScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Speed Stats Bar (Matches Home.tsx download & upload metrics)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(ZtSurface)
-                    .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Real-Time Speed Bar: ONLY shown when connected to eliminate clutter!
+            AnimatedVisibility(
+                visible = isConnected,
+                enter = fadeIn(tween(250)) + expandVertically(tween(250)),
+                exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
             ) {
-                // Download
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDownward,
-                        contentDescription = null,
-                        tint = ZtAccent,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isConnected) formatSpeed(downloadSpeed) else "0.0 Mb/s",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        color = ZtText
-                    )
-                }
+                Column {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(ZtSurface)
+                            .border(1.dp, ZtBorder, RoundedCornerShape(14.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Download
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDownward,
+                                contentDescription = null,
+                                tint = ZtSuccess,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = formatSpeed(downloadSpeed),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ZtText
+                            )
+                        }
 
-                Box(
-                    modifier = Modifier
-                        .height(16.dp)
-                        .width(1.dp)
-                        .background(ZtBorder)
-                )
+                        Box(
+                            modifier = Modifier
+                                .height(14.dp)
+                                .width(1.dp)
+                                .background(ZtBorder)
+                        )
 
-                // Upload
-                Row(
-                    modifier = Modifier.weight(1f).padding(start = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowUpward,
-                        contentDescription = null,
-                        tint = ZtTextMuted,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isConnected) formatSpeed(uploadSpeed) else "0.0 Mb/s",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        color = ZtText
-                    )
-                }
-
-                if (selectedConfig != null) {
-                    Text(
-                        text = "Edit",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = ZtAccent,
-                        modifier = Modifier.clickable { onEditActiveConfig?.invoke() }
-                    )
+                        // Upload
+                        Row(
+                            modifier = Modifier.weight(1f).padding(start = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowUpward,
+                                contentDescription = null,
+                                tint = ZtAccent,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = formatSpeed(uploadSpeed),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ZtText
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -488,8 +494,8 @@ private fun StatusPill(state: VpnState) {
 
     val (label, dotColor) = when {
         isConnected -> Pair("PROTECTED", ZtSuccess)
-        isConnecting -> Pair("SECURING TUNNEL", ZtAccent)
-        isError -> Pair("CONNECTION FAILED", ZtDanger)
+        isConnecting -> Pair("CONNECTING", ZtAccent)
+        isError -> Pair("FAILED", ZtDanger)
         else -> Pair("NOT PROTECTED", ZtTextFaint)
     }
 
@@ -509,7 +515,7 @@ private fun StatusPill(state: VpnState) {
             .clip(RoundedCornerShape(20.dp))
             .background(ZtSurface)
             .border(1.dp, ZtBorder, RoundedCornerShape(20.dp))
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(horizontal = 14.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -520,12 +526,12 @@ private fun StatusPill(state: VpnState) {
                 .background(dotColor)
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(7.dp))
 
         Text(
             text = label,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
             color = if (isConnected) ZtSuccess else if (isConnecting) ZtAccent else if (isError) ZtDanger else ZtTextMuted
         )
@@ -533,9 +539,9 @@ private fun StatusPill(state: VpnState) {
 }
 
 private fun formatSpeed(bytes: Long): String = when {
-    bytes >= 1024 * 1024 -> "%.1f Mb/s".format(bytes / (1024.0 * 1024.0))
-    bytes >= 1024 -> "%.1f Kb/s".format(bytes / 1024.0)
-    else -> "$bytes b/s"
+    bytes >= 1024 * 1024 -> "%.1f MB/s".format(bytes / (1024.0 * 1024.0))
+    bytes >= 1024 -> "%.1f KB/s".format(bytes / 1024.0)
+    else -> "$bytes B/s"
 }
 
 private fun formatDuration(seconds: Long): String {
