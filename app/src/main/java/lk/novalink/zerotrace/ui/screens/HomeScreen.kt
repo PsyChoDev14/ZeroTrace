@@ -99,17 +99,20 @@ fun HomeScreen(
     onPingTest: (ProxyConfig) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var uptimeSeconds by remember { mutableLongStateOf(0L) }
+    var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(vpnState) {
         if (vpnState is VpnState.Connected) {
-            uptimeSeconds = 0L
             while (true) {
+                currentTimeMillis = System.currentTimeMillis()
                 delay(1000L)
-                uptimeSeconds++
             }
-        } else {
-            uptimeSeconds = 0L
         }
+    }
+
+    val uptimeSeconds = if (vpnState is VpnState.Connected && vpnState.connectedAt > 0L) {
+        maxOf(0L, (currentTimeMillis - vpnState.connectedAt) / 1000L)
+    } else {
+        0L
     }
 
     val isConnected = vpnState is VpnState.Connected

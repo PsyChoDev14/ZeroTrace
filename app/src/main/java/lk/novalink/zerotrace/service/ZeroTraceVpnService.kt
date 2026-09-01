@@ -138,6 +138,20 @@ class ZeroTraceVpnService : VpnService() {
                 }
             }
 
+            // Pre-resolve server domain BEFORE establishing VPN interface so normal network DNS is available
+            var resolvedServerIp: String? = null
+            if (config.server.isNotEmpty() && !config.server.matches(Regex("^\\d+\\.\\d+\\.\\d+\\.\\d+$"))) {
+                try {
+                    val future = java.util.concurrent.Executors.newSingleThreadExecutor().submit<String> {
+                        java.net.InetAddress.getByName(config.server).hostAddress
+                    }
+                    resolvedServerIp = future.get(3, java.util.concurrent.TimeUnit.SECONDS)
+                    Log.d("ZeroTraceVpnService", "Pre-resolved server domain before TUN establish: ${config.server} -> $resolvedServerIp")
+                } catch (e: Exception) {
+                    Log.w("ZeroTraceVpnService", "Could not pre-resolve ${config.server} before TUN establish", e)
+                }
+            }
+
             vpnInterface = builder.establish()
 
             if (vpnInterface != null) {
@@ -163,7 +177,8 @@ class ZeroTraceVpnService : VpnService() {
                     muxEnabled = muxOn,
                     fragmentPackets = fragPkts,
                     fragmentLength = fragLen,
-                    fragmentInterval = fragInt
+                    fragmentInterval = fragInt,
+                    resolvedServerIp = resolvedServerIp
                 )
 
                 if (success) {

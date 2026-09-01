@@ -17,5 +17,6 @@ data class InstalledAppInfo(
     val icon: Drawable? = null,
     val iconBitmap: ImageBitmap? = null,
     val isSystemApp: Boolean = false,
+    val isLaunchable: Boolean = true,
     val isSuggestedBankingOrLocal: Boolean = false
 )

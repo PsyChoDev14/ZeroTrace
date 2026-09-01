@@ -49,6 +49,8 @@ import lk.novalink.zerotrace.ui.screens.HomeScreen
 import lk.novalink.zerotrace.ui.screens.OnboardingScreen
 import lk.novalink.zerotrace.ui.screens.SettingsScreen
 import lk.novalink.zerotrace.ui.screens.StatisticsScreen
+import android.content.Intent
+import lk.novalink.zerotrace.parser.ConfigParser
 import lk.novalink.zerotrace.ui.theme.ZtBg
 import lk.novalink.zerotrace.ui.theme.ZeroTraceTheme
 
@@ -66,6 +68,9 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Handle direct deep link / config intent
+        handleConfigIntent(intent)
 
         // Record anonymous telemetry check-in
         lk.novalink.zerotrace.core.TelemetryManager.recordAppOpen(this)
@@ -398,6 +403,24 @@ class MainActivity : FragmentActivity() {
             VpnTunnelManager.startVpn(this, activeConfig)
         } else {
             Toast.makeText(this, "No active config found to connect", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleConfigIntent(intent)
+    }
+
+    private fun handleConfigIntent(intent: Intent?) {
+        if (intent == null) return
+        val rawUri = intent.dataString ?: intent.getStringExtra("config") ?: ""
+        if (rawUri.isNotBlank()) {
+            val parsed = ConfigParser.parseSingle(rawUri)
+            if (parsed != null) {
+                val app = application as? ZeroTraceApp
+                app?.configRepository?.addConfig(parsed, setAsSelected = true)
+                Toast.makeText(this, "Imported: ${parsed.name}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

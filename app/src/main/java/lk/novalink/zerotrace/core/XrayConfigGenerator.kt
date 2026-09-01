@@ -4,6 +4,8 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import lk.novalink.zerotrace.data.model.DnsProviders
 import lk.novalink.zerotrace.data.model.DpiBypassMode
 import lk.novalink.zerotrace.data.model.ProxyConfig
 import lk.novalink.zerotrace.data.model.ProxyProtocol
@@ -18,12 +20,13 @@ object XrayConfigGenerator {
         httpPort: Int = 10809,
         bypassLan: Boolean = true,
         primaryDns: String = "1.1.1.1",
-        dpiBypassMode: DpiBypassMode = DpiBypassMode.SMART_FRAGMENT,
+        dpiBypassMode: DpiBypassMode = DpiBypassMode.OFF,
         utlsFingerprint: String = "chrome",
         muxEnabled: Boolean = false,
         fragmentPackets: String = "tlshello",
-        fragmentLength: String = "10-30",
-        fragmentInterval: String = "10-20"
+        fragmentLength: String = "100-200",
+        fragmentInterval: String = "10-20",
+        resolvedServerIp: String? = null
     ): String {
         // If raw custom JSON was provided, return it directly
         if (config.protocol == ProxyProtocol.CUSTOM_JSON && config.rawConfig.startsWith("{")) {
@@ -32,38 +35,26 @@ object XrayConfigGenerator {
 
         val root = JsonObject()
 
-        // 1. Log configuration (warning level minimizes log overhead for max I/O throughput)
+        // 1. Log configuration
         val log = JsonObject().apply {
-            addProperty("loglevel", "warning")
+            addProperty("loglevel", "debug")
         }
         root.add("log", log)
 
-        // 2. High-Performance Core Policy (Enlarged buffer, Fast Handshake, Low Jitter)
+        // 2. Core Policy
         val policy = JsonObject().apply {
             val levels = JsonObject().apply {
                 val level0 = JsonObject().apply {
-                    addProperty("handshake", 4) // 4s fast handshake
-                    addProperty("connIdle", 300) // 300s keep-alive
-                    addProperty("uplinkOnly", 2)
-                    addProperty("downlinkOnly", 5)
-                    addProperty("statsUserUplink", false)
-                    addProperty("statsUserDownlink", false)
-                    addProperty("bufferSize", 2048) // 2048 KB buffer per connection for gigabit throughput
+                    addProperty("handshake", 4)
+                    addProperty("connIdle", 300)
                 }
                 add("0", level0)
             }
             add("levels", levels)
-            val system = JsonObject().apply {
-                addProperty("statsInboundUplink", false)
-                addProperty("statsInboundDownlink", false)
-                addProperty("statsOutboundUplink", false)
-                addProperty("statsOutboundDownlink", false)
-            }
-            add("system", system)
         }
         root.add("policy", policy)
 
-        // 3. Inbounds (Local SOCKS & HTTP with routeOnly sniffing for zero payload copy overhead)
+        // 3. Inbounds (Local SOCKS & HTTP with destOverride sniffing)
         val inbounds = JsonArray().apply {
             // SOCKS inbound (used by tun2socks)
             add(JsonObject().apply {
@@ -77,7 +68,7 @@ object XrayConfigGenerator {
                 })
                 add("sniffing", JsonObject().apply {
                     addProperty("enabled", true)
-                    addProperty("routeOnly", true) // Ultra-fast: only route, no payload re-buffering
+                    addProperty("routeOnly", false)
                     add("destOverride", JsonArray().apply {
                         add("http")
                         add("tls")
@@ -108,39 +99,34 @@ object XrayConfigGenerator {
         }
         val effectiveLength = when (dpiBypassMode) {
             DpiBypassMode.SMART_FRAGMENT -> "10-30"
-            DpiBypassMode.DEEP_STEALTH -> "5-20"
+            DpiBypassMode.DEEP_STEALTH -> "5-15"
             DpiBypassMode.CUSTOM -> fragmentLength
             DpiBypassMode.OFF -> ""
         }
         val effectiveInterval = when (dpiBypassMode) {
             DpiBypassMode.SMART_FRAGMENT -> "10-20"
-            DpiBypassMode.DEEP_STEALTH -> "15-30"
+            DpiBypassMode.DEEP_STEALTH -> "5-10"
             DpiBypassMode.CUSTOM -> fragmentInterval
             DpiBypassMode.OFF -> ""
         }
 
         val outbounds = JsonArray().apply {
-            // Primary Proxy Outbound
-            add(buildProxyOutbound(
-                config = config,
-                isDpiFragmentActive = isDpiFragmentActive,
-                isMuxActive = isMuxActive,
-                utlsFingerprint = utlsFingerprint
-            ))
+            // 1. Primary Proxy outbound
+            add(buildProxyOutbound(config, isDpiFragmentActive, isMuxActive, utlsFingerprint, resolvedServerIp))
 
-            // DPI Bypass Fragment Outbound (Freedom dialer with packet fragmentation)
+            // 2. DPI Bypass Fragment Outbound (if active)
             if (isDpiFragmentActive) {
                 add(JsonObject().apply {
                     addProperty("tag", "fragment")
                     addProperty("protocol", "freedom")
                     add("settings", JsonObject().apply {
                         addProperty("domainStrategy", "AsIs")
-                        val fragmentObj = JsonObject().apply {
+                        val fragment = JsonObject().apply {
                             addProperty("packets", effectivePackets)
                             addProperty("length", effectiveLength)
                             addProperty("interval", effectiveInterval)
                         }
-                        add("fragment", fragmentObj)
+                        add("fragment", fragment)
                     })
                     add("streamSettings", JsonObject().apply {
                         val sockopt = JsonObject().apply {
@@ -154,7 +140,7 @@ object XrayConfigGenerator {
                 })
             }
 
-            // Direct outbound (Freedom with BBR & fast open)
+            // Direct outbound (Freedom)
             add(JsonObject().apply {
                 addProperty("tag", "direct")
                 addProperty("protocol", "freedom")
@@ -164,6 +150,13 @@ object XrayConfigGenerator {
                 add("streamSettings", JsonObject().apply {
                     add("sockopt", buildSockopt(isDirect = true, isDpiFragmentActive = false))
                 })
+            })
+
+            // DNS outbound — Xray handles DNS queries internally via protected sockets (bypasses VPN TUN)
+            // This prevents UDP/DNS from being forwarded raw through VLESS/TCP (which can't relay UDP)
+            add(JsonObject().apply {
+                addProperty("tag", "dns-out")
+                addProperty("protocol", "dns")
             })
 
             // Block outbound (Blackhole)
@@ -180,17 +173,22 @@ object XrayConfigGenerator {
         }
         root.add("outbounds", outbounds)
 
-        // 5. DNS Settings (Strict IPv4 prioritization, 0ms fast path)
-        val profile = lk.novalink.zerotrace.data.model.DnsProviders.findByPrimaryIp(primaryDns)
-        val secondaryDns = profile?.secondaryIp ?: "1.0.0.1"
-
+        // 5. DNS Settings
         val dns = JsonObject().apply {
+            // hosts: pre-resolved IPs for domains that would cause circular deadlock
+            val hosts = JsonObject()
+            if (!resolvedServerIp.isNullOrBlank() && config.server.isNotEmpty()) {
+                // Server domain resolves directly via pre-resolved IP — zero roundtrip, zero deadlock
+                hosts.addProperty(config.server, resolvedServerIp)
+            }
+            add("hosts", hosts)
+
             add("servers", JsonArray().apply {
-                add("localhost")
-                add(primaryDns)
-                if (secondaryDns != primaryDns) {
-                    add(secondaryDns)
-                }
+                val dnsProfile = DnsProviders.findByPrimaryIp(primaryDns)
+                val primary = if (primaryDns.isNotEmpty()) primaryDns else "94.140.14.14"
+                val secondary = dnsProfile?.secondaryIp ?: "94.140.15.15"
+                add(primary)
+                add(secondary)
             })
             addProperty("queryStrategy", "UseIPv4")
         }
@@ -200,18 +198,29 @@ object XrayConfigGenerator {
         val routing = JsonObject().apply {
             addProperty("domainStrategy", "AsIs")
             val rules = JsonArray().apply {
-                // Route all DNS (port 53) traffic direct to prevent DNS loops
+                // 1. Intercept port 53 and route through Xray DNS engine via protected direct sockets
                 add(JsonObject().apply {
                     addProperty("type", "field")
-                    addProperty("outboundTag", "direct")
                     addProperty("port", "53")
-                    add("network", JsonArray().apply {
-                        add("udp")
-                        add("tcp")
-                    })
+                    addProperty("outboundTag", "dns-out")
                 })
 
-                // Bypass LAN if enabled (using direct CIDR ranges; 0 lookup overhead)
+                // 2. Block Android Private DNS TLS (port 853) to force instant fallback to port 53 DNS
+                add(JsonObject().apply {
+                    addProperty("type", "field")
+                    addProperty("port", "853")
+                    addProperty("outboundTag", "block")
+                })
+
+                // 3. Block QUIC / HTTP3 (UDP 443) so YouTube, Chrome, and apps immediately fall back to TCP HTTPS
+                add(JsonObject().apply {
+                    addProperty("type", "field")
+                    addProperty("port", "443")
+                    add("network", JsonArray().apply { add("udp") })
+                    addProperty("outboundTag", "block")
+                })
+
+                // 4. Bypass LAN if enabled
                 if (bypassLan) {
                     add(JsonObject().apply {
                         addProperty("type", "field")
@@ -228,7 +237,16 @@ object XrayConfigGenerator {
                     })
                 }
 
-                // Default all user traffic to proxy
+                // 5. Route the VPN server domain direct (so Xray's TLS handshake to VPN server doesn't loop into tunnel)
+                if (config.server.isNotEmpty()) {
+                    add(JsonObject().apply {
+                        addProperty("type", "field")
+                        addProperty("outboundTag", "direct")
+                        add("domain", JsonArray().apply { add(config.server) })
+                    })
+                }
+
+                // 6. Route all other TCP & UDP through the proxy tunnel
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     addProperty("outboundTag", "proxy")
@@ -249,8 +267,10 @@ object XrayConfigGenerator {
         config: ProxyConfig,
         isDpiFragmentActive: Boolean,
         isMuxActive: Boolean,
-        utlsFingerprint: String
+        utlsFingerprint: String,
+        resolvedServerIp: String? = null
     ): JsonObject {
+        val targetServer = if (!resolvedServerIp.isNullOrBlank()) resolvedServerIp else config.server
         val outbound = JsonObject().apply {
             addProperty("tag", "proxy")
         }
@@ -272,7 +292,7 @@ object XrayConfigGenerator {
                 val settings = JsonObject()
                 val vnext = JsonArray().apply {
                     add(JsonObject().apply {
-                        addProperty("address", config.server)
+                        addProperty("address", targetServer)
                         addProperty("port", config.port)
                         val users = JsonArray().apply {
                             add(JsonObject().apply {
@@ -296,7 +316,7 @@ object XrayConfigGenerator {
                 val settings = JsonObject()
                 val vnext = JsonArray().apply {
                     add(JsonObject().apply {
-                        addProperty("address", config.server)
+                        addProperty("address", targetServer)
                         addProperty("port", config.port)
                         val users = JsonArray().apply {
                             add(JsonObject().apply {
@@ -318,7 +338,7 @@ object XrayConfigGenerator {
                 val settings = JsonObject()
                 val servers = JsonArray().apply {
                     add(JsonObject().apply {
-                        addProperty("address", config.server)
+                        addProperty("address", targetServer)
                         addProperty("port", config.port)
                         addProperty("password", config.uuid)
                     })
@@ -333,7 +353,7 @@ object XrayConfigGenerator {
                 val settings = JsonObject()
                 val servers = JsonArray().apply {
                     add(JsonObject().apply {
-                        addProperty("address", config.server)
+                        addProperty("address", targetServer)
                         addProperty("port", config.port)
                         addProperty("method", if (config.cipher.isNotEmpty()) config.cipher else "aes-256-gcm")
                         addProperty("password", config.uuid)
@@ -343,6 +363,10 @@ object XrayConfigGenerator {
                 settings.add("servers", servers)
                 outbound.add("settings", settings)
                 outbound.add("streamSettings", buildStreamSettings(config, isDpiFragmentActive, utlsFingerprint))
+            }
+
+            ProxyProtocol.CUSTOM_JSON -> {
+                return JsonParser.parseString(config.rawConfig).asJsonObject
             }
 
             else -> {
@@ -386,7 +410,9 @@ object XrayConfigGenerator {
         } else if (security == "tls") {
             val tlsSettings = JsonObject().apply {
                 addProperty("serverName", if (config.sni.isNotEmpty()) config.sni else config.server)
-                addProperty("verifyPeerCertByName", config.server)
+                if (config.sni.isNotEmpty() && config.server.isNotEmpty() && config.sni != config.server) {
+                    addProperty("verifyPeerCertByName", config.server)
+                }
                 addProperty("fingerprint", effectiveFp)
             }
             stream.add("tlsSettings", tlsSettings)
@@ -423,7 +449,7 @@ object XrayConfigGenerator {
             }
         }
 
-        // Optimized Kernel Socket Options (TCP Fast Open, BBR, DialerProxy for Fragment)
+        // Kernel Socket Options
         stream.add("sockopt", buildSockopt(isDirect = false, isDpiFragmentActive = isDpiFragmentActive))
 
         return stream
@@ -431,11 +457,8 @@ object XrayConfigGenerator {
 
     private fun buildSockopt(isDirect: Boolean, isDpiFragmentActive: Boolean): JsonObject {
         return JsonObject().apply {
-            addProperty("tcpFastOpen", true)
             addProperty("tcpNoDelay", true) // Disable Nagle's algorithm for minimum latency/ping
             addProperty("tcpKeepAlivePeriod", 15) // Keep connections alive without stalling
-            addProperty("tcpCongestion", "bbr") // BBR bottleneck bandwidth & RTT congestion algorithm
-            addProperty("tcpMaxSeg", 1360) // Ideal TCP Maximum Segment Size for MTU 1400 (Zero carrier GTP fragmentation)
             if (!isDirect && isDpiFragmentActive) {
                 addProperty("dialerProxy", "fragment") // Routes handshake through fragment freedom dialer
             }

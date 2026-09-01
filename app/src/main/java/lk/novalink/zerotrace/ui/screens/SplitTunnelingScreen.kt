@@ -1,16 +1,11 @@
 package lk.novalink.zerotrace.ui.screens
 
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,31 +20,28 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,19 +49,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import lk.novalink.zerotrace.ZeroTraceApp
 import lk.novalink.zerotrace.data.model.InstalledAppInfo
 import lk.novalink.zerotrace.data.model.SplitTunnelMode
 import lk.novalink.zerotrace.ui.theme.ZtAccent
 import lk.novalink.zerotrace.ui.theme.ZtAccentSoft
 import lk.novalink.zerotrace.ui.theme.ZtBg
-import lk.novalink.zerotrace.ui.theme.ZtBgElevated
 import lk.novalink.zerotrace.ui.theme.ZtBorder
 import lk.novalink.zerotrace.ui.theme.ZtSuccess
 import lk.novalink.zerotrace.ui.theme.ZtSurface
@@ -77,14 +66,6 @@ import lk.novalink.zerotrace.ui.theme.ZtSurface2
 import lk.novalink.zerotrace.ui.theme.ZtText
 import lk.novalink.zerotrace.ui.theme.ZtTextFaint
 import lk.novalink.zerotrace.ui.theme.ZtTextMuted
-import java.util.Locale
-
-// Known Sri Lankan Banking & Local Ride-sharing / Delivery package keywords
-private val KNOWN_LOCAL_KEYWORDS = listOf(
-    "bank", "combank", "boc", "sampath", "hnb", "peoplesbank", "ndb", "nsb", "seylan",
-    "pickme", "uber", "daraz", "dialog", "mobitel", "slt", "myaccount", "airtel",
-    "payhere", "ezcash", "mcash", "friMi", "qplus", "genie", "ipay", "flash"
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,78 +78,29 @@ fun SplitTunnelingScreen(
     onDeselectAll: () -> Unit,
     onBackClick: () -> Unit
 ) {
-    val context = LocalContext.current
+    val appsRepo = ZeroTraceApp.instance.installedAppsRepository
+    val allInstalledApps by appsRepo.installedApps.collectAsState()
+    val isLoading by appsRepo.isLoading.collectAsState()
+
     var searchQuery by remember { mutableStateOf("") }
-    var filterTab by remember { mutableStateOf(0) } // 0: All, 1: User Apps, 2: Banking & Local
-    var isLoading by remember { mutableStateOf(true) }
-    val allInstalledApps = remember { mutableStateListOf<InstalledAppInfo>() }
+    var filterTab by remember { mutableIntStateOf(0) } // 0: User Apps, 1: Banking & Local, 2: Selected, 3: System Apps, 4: All
 
-    // Load installed apps asynchronously in background
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            val pm = context.packageManager
-            val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            val appList = mutableListOf<InstalledAppInfo>()
+    val userAppsCount = remember(allInstalledApps.size) { allInstalledApps.count { !it.isSystemApp } }
+    val bankAppsCount = remember(allInstalledApps.size) { allInstalledApps.count { it.isSuggestedBankingOrLocal } }
+    val systemAppsCount = remember(allInstalledApps.size) { allInstalledApps.count { it.isSystemApp } }
 
-            for (pkg in packages) {
-                // Don't include self app
-                if (pkg.packageName == context.packageName) continue
-
-                val isSystem = (pkg.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                val appName = try {
-                    pm.getApplicationLabel(pkg).toString()
-                } catch (e: Exception) {
-                    pkg.packageName
-                }
-
-                val lower = (appName + " " + pkg.packageName).lowercase(Locale.ROOT)
-                val isLocalOrBank = KNOWN_LOCAL_KEYWORDS.any { lower.contains(it) }
-
-                val iconDrawable = try {
-                    pm.getApplicationIcon(pkg)
-                } catch (e: Exception) {
-                    null
-                }
-                val iconBitmap = iconDrawable?.let {
-                    try {
-                        drawableToBitmap(it).asImageBitmap()
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-
-                appList.add(
-                    InstalledAppInfo(
-                        packageName = pkg.packageName,
-                        appName = appName,
-                        icon = iconDrawable,
-                        iconBitmap = iconBitmap,
-                        isSystemApp = isSystem,
-                        isSuggestedBankingOrLocal = isLocalOrBank
-                    )
-                )
-            }
-
-            appList.sortBy { it.appName.lowercase(Locale.ROOT) }
-
-            withContext(Dispatchers.Main) {
-                allInstalledApps.clear()
-                allInstalledApps.addAll(appList)
-                isLoading = false
-            }
-        }
-    }
-
-    val filteredApps = remember(allInstalledApps, searchQuery, filterTab) {
+    val filteredApps = remember(allInstalledApps.size, searchQuery, filterTab, selectedApps) {
         allInstalledApps.filter { app ->
             val matchesSearch = searchQuery.isBlank() ||
                     app.appName.contains(searchQuery, ignoreCase = true) ||
                     app.packageName.contains(searchQuery, ignoreCase = true)
 
             val matchesTab = when (filterTab) {
-                1 -> !app.isSystemApp
-                2 -> app.isSuggestedBankingOrLocal
-                else -> true
+                0 -> !app.isSystemApp // User Apps (Installed + Launchable + Store Apps)
+                1 -> app.isSuggestedBankingOrLocal // Banking & Local
+                2 -> selectedApps.contains(app.packageName) // Selected Only
+                3 -> app.isSystemApp // Background OS Daemons & Frameworks
+                else -> true // All
             }
 
             matchesSearch && matchesTab
@@ -213,6 +145,14 @@ fun SplitTunnelingScreen(
                     },
                     fontSize = 11.5.sp,
                     color = if (currentMode != SplitTunnelMode.OFF) ZtAccent else ZtTextMuted
+                )
+            }
+
+            IconButton(onClick = { appsRepo.refreshInstalledApps() }) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh Apps",
+                    tint = ZtTextMuted
                 )
             }
         }
@@ -264,7 +204,7 @@ fun SplitTunnelingScreen(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .border(1.dp, ZtBorder, RoundedCornerShape(12.dp)),
-                        placeholder = { Text("Search installed apps...", color = ZtTextFaint, fontSize = 13.sp) },
+                        placeholder = { Text("Search apps or package...", color = ZtTextFaint, fontSize = 13.sp) },
                         leadingIcon = {
                             Icon(Icons.Default.Search, contentDescription = "Search", tint = ZtTextMuted, modifier = Modifier.size(18.dp))
                         },
@@ -289,7 +229,7 @@ fun SplitTunnelingScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Filter Tabs & Quick Action Row
+                // Filter Tabs & Quick Action Row (Horizontally Scrollable)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -297,16 +237,27 @@ fun SplitTunnelingScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterPill(label = "All (${allInstalledApps.size})", isSelected = filterTab == 0, onClick = { filterTab = 0 })
-                        FilterPill(label = "User Apps", isSelected = filterTab == 1, onClick = { filterTab = 1 })
-                        FilterPill(label = "🏦 Banking & Local", isSelected = filterTab == 2, onClick = { filterTab = 2 })
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        FilterPill(label = "User Apps ($userAppsCount)", isSelected = filterTab == 0, onClick = { filterTab = 0 })
+                        FilterPill(label = "🏦 Banking ($bankAppsCount)", isSelected = filterTab == 1, onClick = { filterTab = 1 })
+                        if (selectedApps.isNotEmpty()) {
+                            FilterPill(label = "Selected (${selectedApps.size})", isSelected = filterTab == 2, onClick = { filterTab = 2 })
+                        }
+                        FilterPill(label = "⚙️ System ($systemAppsCount)", isSelected = filterTab == 3, onClick = { filterTab = 3 })
+                        FilterPill(label = "All (${allInstalledApps.size})", isSelected = filterTab == 4, onClick = { filterTab = 4 })
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     // Select / Clear All
                     Text(
                         text = if (selectedApps.isNotEmpty()) "Clear (${selectedApps.size})" else "Select All",
-                        fontSize = 12.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = ZtAccent,
                         modifier = Modifier
@@ -456,13 +407,13 @@ private fun AppItemCard(
                     bitmap = app.iconBitmap,
                     contentDescription = app.appName,
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(RoundedCornerShape(8.dp))
                 )
             } else {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(ZtSurface2),
                     contentAlignment = Alignment.Center
@@ -470,7 +421,7 @@ private fun AppItemCard(
                     Text(
                         text = app.appName.take(1).uppercase(),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         color = ZtAccent
                     )
                 }
@@ -482,7 +433,7 @@ private fun AppItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = app.appName,
-                        fontSize = 13.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = ZtText,
                         maxLines = 1
@@ -507,6 +458,7 @@ private fun AppItemCard(
 
                 Text(
                     text = app.packageName,
+                    fontFamily = FontFamily.Monospace,
                     fontSize = 10.5.sp,
                     color = ZtTextFaint,
                     maxLines = 1
@@ -533,17 +485,4 @@ private fun AppItemCard(
             }
         }
     }
-}
-
-private fun drawableToBitmap(drawable: Drawable): Bitmap {
-    if (drawable is BitmapDrawable && drawable.bitmap != null) {
-        return drawable.bitmap
-    }
-    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 48
-    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 48
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
-    return bitmap
 }

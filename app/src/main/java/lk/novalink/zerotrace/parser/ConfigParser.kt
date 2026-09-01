@@ -8,20 +8,56 @@ import lk.novalink.zerotrace.data.model.ProxyProtocol
 object ConfigParser {
 
     /**
-     * Parses a single config line or JSON string.
+     * Parses a single config line or JSON string with intelligent URI extraction.
      */
     fun parseSingle(input: String): ProxyConfig? {
-        val trimmed = input.trim()
-        if (trimmed.isEmpty()) return null
+        var clean = input.trim()
+        if (clean.isEmpty()) return null
 
-        return when {
-            trimmed.startsWith("vless://", ignoreCase = true) -> VlessParser.parse(trimmed)
-            trimmed.startsWith("vmess://", ignoreCase = true) -> VmessParser.parse(trimmed)
-            trimmed.startsWith("trojan://", ignoreCase = true) -> TrojanParser.parse(trimmed)
-            trimmed.startsWith("ss://", ignoreCase = true) -> ShadowsocksParser.parse(trimmed)
-            trimmed.startsWith("{") && trimmed.endsWith("}") -> parseCustomJson(trimmed)
-            else -> null
+        // Strip surrounding quotes or markdown backticks
+        if ((clean.startsWith("\"") && clean.endsWith("\"")) || (clean.startsWith("'") && clean.endsWith("'"))) {
+            clean = clean.substring(1, clean.length - 1).trim()
         }
+        if (clean.startsWith("```") && clean.endsWith("```")) {
+            clean = clean.removeSurrounding("```").trim()
+        }
+
+        // 1. Direct protocol matching
+        if (clean.startsWith("vless://", ignoreCase = true)) return VlessParser.parse(clean)
+        if (clean.startsWith("vmess://", ignoreCase = true)) return VmessParser.parse(clean)
+        if (clean.startsWith("trojan://", ignoreCase = true)) return TrojanParser.parse(clean)
+        if (clean.startsWith("ss://", ignoreCase = true)) return ShadowsocksParser.parse(clean)
+        if (clean.startsWith("{") && clean.endsWith("}")) return parseCustomJson(clean)
+
+        // 2. Extract embedded URI if copied from chat captions (Telegram / WhatsApp)
+        val schemes = listOf("vless://", "vmess://", "trojan://", "ss://")
+        for (scheme in schemes) {
+            val idx = clean.indexOf(scheme, ignoreCase = true)
+            if (idx != -1) {
+                val substring = clean.substring(idx)
+                // Take until next whitespace or newline
+                val candidate = substring.split(Regex("[\\s\\r\\n]+")).firstOrNull { it.startsWith(scheme, ignoreCase = true) } ?: ""
+                val parsed = when {
+                    candidate.startsWith("vless://", ignoreCase = true) -> VlessParser.parse(candidate)
+                    candidate.startsWith("vmess://", ignoreCase = true) -> VmessParser.parse(candidate)
+                    candidate.startsWith("trojan://", ignoreCase = true) -> TrojanParser.parse(candidate)
+                    candidate.startsWith("ss://", ignoreCase = true) -> ShadowsocksParser.parse(candidate)
+                    else -> null
+                }
+                if (parsed != null) return parsed
+            }
+        }
+
+        // 3. Extract embedded JSON if present
+        val firstBrace = clean.indexOf("{")
+        val lastBrace = clean.lastIndexOf("}")
+        if (firstBrace != -1 && lastBrace > firstBrace) {
+            val jsonCandidate = clean.substring(firstBrace, lastBrace + 1)
+            val parsed = parseCustomJson(jsonCandidate)
+            if (parsed != null) return parsed
+        }
+
+        return null
     }
 
     /**

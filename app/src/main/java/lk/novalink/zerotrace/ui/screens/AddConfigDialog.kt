@@ -57,6 +57,18 @@ import lk.novalink.zerotrace.ui.theme.TextWhite
 import lk.novalink.zerotrace.ui.theme.ZtAccent
 import lk.novalink.zerotrace.ui.theme.ZtAccentSoft
 import lk.novalink.zerotrace.ui.theme.ZtBgElevated
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalClipboardManager
 import lk.novalink.zerotrace.ui.theme.ZtBorder
 
 @Composable
@@ -65,6 +77,9 @@ fun AddConfigDialog(
     onSaveConfig: (ProxyConfig) -> Unit
 ) {
     val context = LocalContext.current
+    val composeClipboard = LocalClipboardManager.current
+    val focusRequester = remember { FocusRequester() }
+
     var inputText by remember { mutableStateOf("") }
     var customName by remember { mutableStateOf("") }
     var parsedConfig by remember { mutableStateOf<ProxyConfig?>(null) }
@@ -90,6 +105,40 @@ fun AddConfigDialog(
         }
     }
 
+    fun pasteFromClipboard() {
+        try {
+            // 1. Try Jetpack Compose ClipboardManager
+            val composeText = composeClipboard.getText()?.text?.toString() ?: ""
+            if (composeText.isNotBlank()) {
+                updateInput(composeText)
+                return
+            }
+
+            // 2. Fallback to Android OS ClipboardManager
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            val clip = clipboard?.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val item = clip.getItemAt(0)
+                val text = item.coerceToText(context)?.toString() ?: ""
+                if (text.isNotBlank()) {
+                    updateInput(text)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        delay(150)
+        pasteFromClipboard()
+        try {
+            focusRequester.requestFocus()
+        } catch (e: Exception) {
+            // ignore
+        }
+    }
+
     if (showQrScanner) {
         QrCodeScannerDialog(
             onDismiss = { showQrScanner = false },
@@ -107,6 +156,16 @@ fun AddConfigDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(1.5.dp, ZtBorder, RoundedCornerShape(24.dp))
+                .onKeyEvent { keyEvent ->
+                    if (keyEvent.type == KeyEventType.KeyDown &&
+                        (keyEvent.isMetaPressed || keyEvent.isCtrlPressed) &&
+                        keyEvent.key == Key.V) {
+                        pasteFromClipboard()
+                        true
+                    } else {
+                        false
+                    }
+                }
         ) {
             Column(
                 modifier = Modifier
@@ -173,13 +232,7 @@ fun AddConfigDialog(
 
                     // Paste Button
                     TextButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                            val clipText = clipboard?.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
-                            if (clipText.isNotBlank()) {
-                                updateInput(clipText)
-                            }
-                        },
+                        onClick = { pasteFromClipboard() },
                         colors = ButtonDefaults.textButtonColors(contentColor = TextWhite),
                         modifier = Modifier
                             .weight(1f)
@@ -220,7 +273,19 @@ fun AddConfigDialog(
                         unfocusedTextColor = TextWhite,
                         cursorColor = ZtAccent
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
+                        .onKeyEvent { keyEvent ->
+                            if (keyEvent.type == KeyEventType.KeyDown &&
+                                (keyEvent.isMetaPressed || keyEvent.isCtrlPressed) &&
+                                keyEvent.key == Key.V) {
+                                pasteFromClipboard()
+                                true
+                            } else {
+                                false
+                            }
+                        }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

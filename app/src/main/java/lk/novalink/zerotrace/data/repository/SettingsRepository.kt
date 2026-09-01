@@ -24,9 +24,9 @@ class SettingsRepository(context: Context) {
 
     // DPI Bypass & Stealth Engine Settings
     private val initialDpiMode = try {
-        DpiBypassMode.valueOf(prefs.getString(KEY_DPI_MODE, DpiBypassMode.SMART_FRAGMENT.name) ?: DpiBypassMode.SMART_FRAGMENT.name)
+        DpiBypassMode.valueOf(prefs.getString(KEY_DPI_MODE, DpiBypassMode.OFF.name) ?: DpiBypassMode.OFF.name)
     } catch (e: Exception) {
-        DpiBypassMode.SMART_FRAGMENT
+        DpiBypassMode.OFF
     }
     private val _dpiBypassMode = MutableStateFlow(initialDpiMode)
     val dpiBypassMode: StateFlow<DpiBypassMode> = _dpiBypassMode.asStateFlow()
@@ -157,7 +157,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_BIOMETRIC_LOCK = "setting_biometric_lock"
 
         const val TELEGRAM_SUPPORT_URL = "https://t.me/novalink_lk"
-        const val WHATSAPP_SUPPORT_URL = "https://wa.me/94770000000"
+        const val WHATSAPP_SUPPORT_URL = "https://wa.me/94788385465"
         const val WEBSITE_URL = "https://novalink.lk"
     }
 }

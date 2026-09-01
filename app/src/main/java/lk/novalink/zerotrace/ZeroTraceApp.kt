@@ -16,12 +16,16 @@ class ZeroTraceApp : Application() {
     lateinit var trafficStatsRepository: TrafficStatsRepository
         private set
 
+    lateinit var installedAppsRepository: lk.novalink.zerotrace.data.repository.InstalledAppsRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
         configRepository = ConfigRepository(this)
         settingsRepository = SettingsRepository(this)
         trafficStatsRepository = TrafficStatsRepository(this)
+        installedAppsRepository = lk.novalink.zerotrace.data.repository.InstalledAppsRepository(this)
     }
 
     companion object {

@@ -32,10 +32,11 @@ object XrayCoreManager {
         muxEnabled: Boolean = false,
         fragmentPackets: String = "tlshello",
         fragmentLength: String = "10-30",
-        fragmentInterval: String = "10-20"
+        fragmentInterval: String = "10-20",
+        resolvedServerIp: String? = null
     ): Boolean {
         try {
-            Log.d(TAG, "Starting Xray Core Engine for: ${config.name} (DPI Mode: ${dpiBypassMode.name})")
+            Log.d(TAG, "Starting Xray Core Engine for: ${config.name} (DPI Mode: ${dpiBypassMode.name}, Resolved IP: $resolvedServerIp)")
 
             // 1. Register Dialer Controller to protect outbound sockets from looping inside the VPN
             try {
@@ -55,7 +56,21 @@ object XrayCoreManager {
                 Log.w(TAG, "Could not register dialer controller", e)
             }
 
-            // 2. Generate runtime Xray-Core JSON and save to file
+            // 2. Pre-resolve server domain if not provided and not a raw IP
+            var finalServerIp = resolvedServerIp
+            if (finalServerIp.isNullOrBlank() && config.server.isNotEmpty() && !config.server.matches(Regex("^\\d+\\.\\d+\\.\\d+\\.\\d+$"))) {
+                try {
+                    val future = java.util.concurrent.Executors.newSingleThreadExecutor().submit<String> {
+                        java.net.InetAddress.getByName(config.server).hostAddress
+                    }
+                    finalServerIp = future.get(3, java.util.concurrent.TimeUnit.SECONDS)
+                    Log.d(TAG, "Pre-resolved server: ${config.server} -> $finalServerIp")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not pre-resolve ${config.server}", e)
+                }
+            }
+
+            // 3. Generate runtime Xray-Core JSON and save to file
             val configDir = File(context.filesDir, "xray").apply { mkdirs() }
             val configFile = File(configDir, "config.json")
             val xrayJson = XrayConfigGenerator.generateRuntimeJson(
@@ -69,7 +84,8 @@ object XrayCoreManager {
                 muxEnabled = muxEnabled,
                 fragmentPackets = fragmentPackets,
                 fragmentLength = fragmentLength,
-                fragmentInterval = fragmentInterval
+                fragmentInterval = fragmentInterval,
+                resolvedServerIp = finalServerIp
             )
             configFile.writeText(xrayJson)
             Log.d(TAG, "Wrote runtime Xray JSON to: ${configFile.absolutePath}")
@@ -110,14 +126,12 @@ object XrayCoreManager {
                 tunnel:
                   name: tun0
                   mtu: 1400
-                  multi-queue: true
                   ipv4: 10.233.233.2
 
                 socks5:
                   port: $SOCKS_PORT
                   address: 127.0.0.1
                   udp: udp
-                  pipeline: true
                   read-write-timeout: 60000
             """.trimIndent()
             tunConfigFile.writeText(tunYaml)

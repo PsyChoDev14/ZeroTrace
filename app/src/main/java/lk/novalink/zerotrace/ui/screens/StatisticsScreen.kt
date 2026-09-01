@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -34,14 +35,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -49,10 +49,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lk.novalink.zerotrace.ZeroTraceApp
+import lk.novalink.zerotrace.data.repository.ChartBarData
 import lk.novalink.zerotrace.data.repository.LiveTrafficData
 import lk.novalink.zerotrace.ui.theme.ZtAccent
+import lk.novalink.zerotrace.ui.theme.ZtAccentSoft
 import lk.novalink.zerotrace.ui.theme.ZtBg
 import lk.novalink.zerotrace.ui.theme.ZtBorder
+import lk.novalink.zerotrace.ui.theme.ZtBorderStrong
+import lk.novalink.zerotrace.ui.theme.ZtSuccess
 import lk.novalink.zerotrace.ui.theme.ZtSurface
 import lk.novalink.zerotrace.ui.theme.ZtSurface2
 import lk.novalink.zerotrace.ui.theme.ZtText
@@ -67,7 +71,7 @@ private data class DisplayStats(
     val downloadFormatted: String,
     val uploadFormatted: String,
     val connectedTime: String,
-    val chartPoints: List<Float> // 0.1..1.0 scale
+    val chartData: List<ChartBarData>
 )
 
 @Composable
@@ -80,6 +84,7 @@ fun StatisticsScreen(
     val monthData by statsRepo.monthStats.collectAsState()
 
     var selectedIndex by remember { mutableIntStateOf(1) } // 0=Today, 1=This Week, 2=This Month
+    var selectedBarIndex by remember { mutableStateOf<Int?>(null) }
 
     val activeData = when (selectedIndex) {
         0 -> todayData
@@ -109,7 +114,7 @@ fun StatisticsScreen(
             color = ZtText
         )
         Text(
-            text = "Measured on this device only",
+            text = "Measured locally on this device",
             fontSize = 12.5.sp,
             color = ZtTextMuted
         )
@@ -133,7 +138,10 @@ fun StatisticsScreen(
                         .weight(1f)
                         .clip(RoundedCornerShape(9.dp))
                         .background(if (isSelected) ZtSurface2 else Color.Transparent)
-                        .clickable { selectedIndex = index }
+                        .clickable {
+                            selectedIndex = index
+                            selectedBarIndex = null
+                        }
                         .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -194,47 +202,14 @@ fun StatisticsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Visual Usage Bar Chart
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(ZtSurface)
-                .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val barCount = displayStats.chartPoints.size
-                val availableWidth = size.width
-                val barWidth = availableWidth / (barCount * 1.8f)
-                val spacing = (availableWidth - (barWidth * barCount)) / (barCount - 1)
-                val maxHeight = size.height
-
-                displayStats.chartPoints.forEachIndexed { i, fraction ->
-                    val x = i * (barWidth + spacing)
-                    val barH = (maxHeight * fraction).coerceAtLeast(10f)
-                    val y = maxHeight - barH
-
-                    // Background track bar
-                    drawRoundRect(
-                        color = ZtTrack,
-                        topLeft = Offset(x, 0f),
-                        size = Size(barWidth, maxHeight),
-                        cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
-                    )
-
-                    // Foreground active data bar
-                    drawRoundRect(
-                        color = ZtAccent,
-                        topLeft = Offset(x, y),
-                        size = Size(barWidth, barH),
-                        cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
-                    )
-                }
+        // Real Activity Usage Chart
+        UsageChartCard(
+            chartBars = displayStats.chartData,
+            selectedBarIndex = selectedBarIndex,
+            onSelectBar = { index ->
+                selectedBarIndex = if (selectedBarIndex == index) null else index
             }
-        }
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -264,7 +239,7 @@ fun StatisticsScreen(
 
                 StatRow(
                     icon = Icons.Default.ArrowUpward,
-                    iconTint = ZtTextMuted,
+                    iconTint = Color(0xFF38BDF8),
                     label = "Upload",
                     value = displayStats.uploadFormatted
                 )
@@ -292,6 +267,143 @@ fun StatisticsScreen(
             fontSize = 11.5.sp,
             color = ZtTextFaint
         )
+    }
+}
+
+@Composable
+private fun UsageChartCard(
+    chartBars: List<ChartBarData>,
+    selectedBarIndex: Int?,
+    onSelectBar: (Int) -> Unit
+) {
+    val maxBytes = (chartBars.maxOfOrNull { it.bytes } ?: 0L).coerceAtLeast(1024 * 1024L) // min 1MB baseline
+    val activeSelection = selectedBarIndex?.let { chartBars.getOrNull(it) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(ZtSurface)
+            .border(1.dp, ZtBorder, RoundedCornerShape(16.dp))
+            .padding(16.dp)
+    ) {
+        Column {
+            // Header / Tooltip Area
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ACTIVITY BREAKDOWN",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    color = ZtTextFaint
+                )
+
+                if (activeSelection != null) {
+                    Text(
+                        text = "${activeSelection.label}: ${formatBytesString(activeSelection.bytes)}",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.Monospace,
+                        color = ZtAccent
+                    )
+                } else {
+                    Text(
+                        text = "Peak: ${formatBytesString(maxBytes)}",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = ZtTextMuted
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Chart Bars Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                chartBars.forEachIndexed { index, bar ->
+                    val isSelected = selectedBarIndex == index
+                    val heightFraction = if (bar.bytes > 0) {
+                        (bar.bytes.toFloat() / maxBytes.toFloat()).coerceIn(0.08f, 1.0f)
+                    } else {
+                        0.04f
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable { onSelectBar(index) },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom
+                    ) {
+                        // The Bar Column
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            // Track background
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(18.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (isSelected) ZtAccentSoft else ZtTrack)
+                            )
+
+                            // Active Fill Bar
+                            val barBrush = when {
+                                bar.bytes == 0L -> Brush.verticalGradient(
+                                    listOf(ZtTrack.copy(alpha = 0.5f), ZtTrack.copy(alpha = 0.5f))
+                                )
+                                isSelected -> Brush.verticalGradient(
+                                    listOf(Color(0xFF60A5FA), ZtAccent)
+                                )
+                                bar.isCurrent -> Brush.verticalGradient(
+                                    listOf(Color(0xFF38BDF8), ZtAccent)
+                                )
+                                else -> Brush.verticalGradient(
+                                    listOf(ZtAccent.copy(alpha = 0.85f), ZtAccent.copy(alpha = 0.6f))
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight(heightFraction)
+                                    .width(18.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(barBrush)
+                                    .border(
+                                        width = if (isSelected || bar.isCurrent) 1.dp else 0.dp,
+                                        color = if (isSelected) Color.White else if (bar.isCurrent) ZtAccent else Color.Transparent,
+                                        shape = RoundedCornerShape(6.dp)
+                                    )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // X-axis label
+                        Text(
+                            text = bar.label,
+                            fontSize = 11.sp,
+                            fontWeight = if (bar.isCurrent || isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) Color.White else if (bar.isCurrent) ZtAccent else ZtTextMuted
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -338,19 +450,13 @@ private fun buildDisplayStats(label: String, data: LiveTrafficData): DisplayStat
     val totalBytes = data.downloadBytes + data.uploadBytes
     val totalPair = formatBytesPair(totalBytes)
 
-    // Normalize daily history for bar chart
-    val maxBytes = (data.dailyHistory.maxOrNull() ?: 1L).coerceAtLeast(1024 * 1024L) // min 1MB baseline
-    val chartPoints = data.dailyHistory.map {
-        if (it == 0L) 0.12f else (it.toFloat() / maxBytes.toFloat()).coerceIn(0.12f, 1.0f)
-    }
-
     return DisplayStats(
         rangeLabel = label,
         totalFormatted = totalPair,
         downloadFormatted = formatBytesString(data.downloadBytes),
         uploadFormatted = formatBytesString(data.uploadBytes),
         connectedTime = formatSeconds(data.connectionSeconds),
-        chartPoints = chartPoints
+        chartData = data.chartData
     )
 }
 

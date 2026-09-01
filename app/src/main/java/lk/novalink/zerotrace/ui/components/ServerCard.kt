@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -54,7 +55,7 @@ import lk.novalink.zerotrace.ui.theme.ZtTrack
 import lk.novalink.zerotrace.ui.theme.ZtWarn
 
 /**
- * Native Jetpack Compose implementation of ServerRow.tsx from React design system
+ * Native Jetpack Compose implementation of ServerCard with spacious Apple/Material layout
  */
 @Composable
 fun ServerCard(
@@ -77,133 +78,85 @@ fun ServerCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(ZtSurface)
+            .background(if (isSelected) ZtAccentSoft.copy(alpha = 0.25f) else ZtSurface)
             .border(if (isSelected) 1.5.dp else 1.dp, borderColor, RoundedCornerShape(16.dp))
             .clickable { onSelect() }
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Location / Protocol Icon
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (isSelected) ZtAccentSoft else ZtSurface2),
-                contentAlignment = Alignment.Center
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // TOP SECTION: Protocol Icon + Name & Subtitles + Selection Indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Language,
-                    contentDescription = null,
-                    tint = if (isSelected) ZtAccent else ZtTextMuted,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Node info
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = config.name,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        fontSize = 14.5.sp,
-                        color = ZtText,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    ProtocolBadge(protocol = config.protocol)
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = config.displaySubtitle,
-                    fontSize = 11.5.sp,
-                    color = ZtTextFaint,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                if (config.sni.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "SNI: ${config.sni}",
-                        fontSize = 10.5.sp,
-                        color = ZtAccent.copy(alpha = 0.85f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Latency & Actions
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PingBadge(
-                    pingMs = config.pingMs,
-                    onPingClick = onPingTest
-                )
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                // Load bars (Matches LoadBars in ServerRow.tsx)
-                LoadBars(pingMs = config.pingMs)
-
-                if (onShare != null) {
-                    IconButton(
-                        onClick = onShare,
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.QrCode,
-                            contentDescription = "Share Config QR",
-                            tint = ZtAccent,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                if (onEdit != null) {
-                    IconButton(
-                        onClick = onEdit,
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = ZtTextMuted,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-                }
-
-                if (onDelete != null) {
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "Delete",
-                            tint = ZtTextFaint,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                // Checked indicator circle
+                // Protocol Icon
                 Box(
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) ZtAccentSoft else ZtSurface2),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = null,
+                        tint = if (isSelected) ZtAccent else ZtTextMuted,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Node Details (gets maximum horizontal width)
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = config.name,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            color = ZtText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        ProtocolBadge(protocol = config.protocol)
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = config.displaySubtitle,
+                        fontSize = 12.sp,
+                        color = ZtTextFaint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (config.sni.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "SNI: ${config.sni}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = ZtAccent.copy(alpha = 0.9f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // Selection Radio / Checkmark
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
                         .clip(CircleShape)
                         .background(if (isSelected) ZtAccent else Color.Transparent)
-                        .border(1.dp, if (isSelected) ZtAccent else ZtBorderStrong, CircleShape),
+                        .border(1.5.dp, if (isSelected) ZtAccent else ZtBorderStrong, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isSelected) {
@@ -211,8 +164,89 @@ fun ServerCard(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Selected",
                             tint = Color.White,
-                            modifier = Modifier.size(12.dp)
+                            modifier = Modifier.size(13.dp)
                         )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Subtle divider between info and action footer
+            HorizontalDivider(
+                thickness = 0.5.dp,
+                color = ZtBorder.copy(alpha = 0.4f)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // BOTTOM SECTION: Telemetry (Ping + Signal Bars) on Left, Actions (Share/Edit/Delete) on Right
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Ping & Load Bars
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(enabled = onPingTest != null) { onPingTest?.invoke() }
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                ) {
+                    PingBadge(
+                        pingMs = config.pingMs,
+                        onPingClick = onPingTest
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    LoadBars(pingMs = config.pingMs)
+                }
+
+                // Action Buttons
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    if (onShare != null) {
+                        IconButton(
+                            onClick = onShare,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.QrCode,
+                                contentDescription = "Share Config QR",
+                                tint = ZtAccent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    if (onEdit != null) {
+                        IconButton(
+                            onClick = onEdit,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = ZtTextMuted,
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
+                    }
+
+                    if (onDelete != null) {
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Delete",
+                                tint = ZtDanger.copy(alpha = 0.8f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
