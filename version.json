@@ -1,8 +1,8 @@
 {
-  "versionCode": 16,
-  "versionName": "1.2.4",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.4/ZeroTrace-v1.2.4-arm64-v8a.apk",
-  "changelog": "• Critical fix: Eliminated Xray DNS routing deadlock causing no internet\n• Fixed Xray routing JSON format for UDP/TCP (string not array)\n• Fixed IPv6 TUN prefix from /120 to /64 for Android 16 compatibility\n• Server IP now routed direct (not domain) preventing TLS handshake loop\n• Improved Diagnostic Logs: captures all engine, crash, and VPN logs",
+  "versionCode": 17,
+  "versionName": "1.2.5",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.5/ZeroTrace-v1.2.5-arm64-v8a.apk",
+  "changelog": "• Critical fix: Replaced removed allowInsecure with verifyPeerCertByName for new Xray engine\n• Bug-host zero-rated configs (Dialog/Airtel) now work correctly with custom SNI\n• Fixed false update notification showing 'update available' on same version\n• IPv6 TUN prefix /64 fix for Android 16 compatibility",
   "forceUpdate": false,
   "releaseDate": "2026-09-02",
   "minSupportedVersion": 1

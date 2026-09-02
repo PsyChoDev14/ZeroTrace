@@ -426,13 +426,21 @@ object XrayConfigGenerator {
             val tlsSettings = JsonObject().apply {
                 val sniHost = if (config.sni.isNotEmpty()) config.sni else config.server
                 addProperty("serverName", sniHost)
-                addProperty("allowInsecure", true)
                 addProperty("fingerprint", effectiveFp)
                 val alpn = JsonArray().apply {
                     add("http/1.1")
                     add("h2")
                 }
                 add("alpn", alpn)
+
+                // verifyPeerCertByName: when SNI (bug-host) differs from actual server,
+                // verify the real server's certificate CN/SAN instead of the SNI host.
+                // This replaces the deprecated/removed allowInsecure flag.
+                if (config.sni.isNotEmpty() && config.sni != config.server) {
+                    // Bug-host mode: SNI = zero-rated host, cert check = actual server host
+                    addProperty("verifyPeerCertByName", config.server)
+                }
+                // If SNI == server (standard TLS), no extra field needed — normal cert validation
             }
             stream.add("tlsSettings", tlsSettings)
         }

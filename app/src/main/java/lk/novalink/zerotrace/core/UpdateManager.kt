@@ -83,27 +83,38 @@ object UpdateManager {
             var updateInfo = fetchVersionJson(endpointUrl)
 
             // 2. Fallback / Complementary attempt: GitHub Releases API
+            // Only use GH API if version.json didn't find anything newer
             if (updateInfo == null || updateInfo.versionCode <= currentVersionCode) {
                 val ghUpdateInfo = fetchGitHubLatestRelease()
                 if (ghUpdateInfo != null) {
-                    val isNewerSemVer = isVersionNewer(ghUpdateInfo.versionName, currentVersionName)
-                    val isNewerCode = ghUpdateInfo.versionCode > currentVersionCode
-                    if (isNewerSemVer || isNewerCode) {
+                    // GitHub API fallback uses ONLY semantic version comparison
+                    // (versionCode is set to -1 as placeholder, never used for comparison)
+                    val isGenuinelyNewer = isVersionNewer(ghUpdateInfo.versionName, currentVersionName)
+                    if (isGenuinelyNewer) {
                         updateInfo = ghUpdateInfo
                     }
                 }
             }
 
-            if (updateInfo != null && (updateInfo.versionCode > currentVersionCode || isVersionNewer(updateInfo.versionName, currentVersionName))) {
-                Log.d(TAG, "Update available! Current: $currentVersionName ($currentVersionCode), New: ${updateInfo.versionName} (${updateInfo.versionCode})")
-                _updateState.value = UpdateState.UpdateAvailable(updateInfo)
-                postUpdateNotification(context, updateInfo)
-                return@withContext updateInfo
-            } else {
-                Log.d(TAG, "App is up to date: $currentVersionName ($currentVersionCode)")
-                _updateState.value = if (isManualCheck) UpdateState.UpToDate else UpdateState.Idle
-                return@withContext null
+            if (updateInfo != null) {
+                // For version.json updates: compare versionCode; for GH API fallback (versionCode=-1): compare semver only
+                val isNewer = if (updateInfo.versionCode > 0) {
+                    updateInfo.versionCode > currentVersionCode
+                } else {
+                    isVersionNewer(updateInfo.versionName, currentVersionName)
+                }
+
+                if (isNewer) {
+                    Log.d(TAG, "Update available! Current: $currentVersionName ($currentVersionCode), New: ${updateInfo.versionName}")
+                    _updateState.value = UpdateState.UpdateAvailable(updateInfo)
+                    postUpdateNotification(context, updateInfo)
+                    return@withContext updateInfo
+                }
             }
+
+            Log.d(TAG, "App is up to date: $currentVersionName ($currentVersionCode)")
+            _updateState.value = if (isManualCheck) UpdateState.UpToDate else UpdateState.Idle
+            return@withContext null
         } catch (e: Exception) {
             Log.e(TAG, "Error checking for updates", e)
             _updateState.value = if (isManualCheck) {
@@ -165,7 +176,7 @@ object UpdateManager {
 
                 if (tagName.isNotEmpty() && downloadUrl.isNotEmpty()) {
                     AppUpdateInfo(
-                        versionCode = 999, // placeholder, compared via isVersionNewer
+                        versionCode = -1, // placeholder — GH API; compared via semver only
                         versionName = tagName,
                         downloadUrl = downloadUrl,
                         changelog = body,
