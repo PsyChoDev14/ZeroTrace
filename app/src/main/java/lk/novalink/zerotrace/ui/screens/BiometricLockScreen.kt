@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +56,13 @@ import lk.novalink.zerotrace.ui.theme.ZtText
 import lk.novalink.zerotrace.ui.theme.ZtTextFaint
 import lk.novalink.zerotrace.ui.theme.ZtTextMuted
 
+import androidx.compose.ui.platform.LocalContext
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+
 @Composable
 fun BiometricLockScreen(
     onUnlockClick: () -> Unit,
@@ -63,15 +73,35 @@ fun BiometricLockScreen(
         onUnlockClick()
     }
 
+    val context = LocalContext.current
+    val hasLottieAsset = remember {
+        try {
+            context.assets.open("fingerprint_scan.json").use { true }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "pulse_lock")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.08f,
+        targetValue = 1.06f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
+            animation = tween(1400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseScale"
+    )
+
+    // Laser scan beam moving up and down
+    val laserOffset by infiniteTransition.animateFloat(
+        initialValue = -35f,
+        targetValue = 35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "laserOffset"
     )
 
     Surface(
@@ -88,33 +118,88 @@ fun BiometricLockScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Animated Glowing Shield & Fingerprint
-            Box(
-                modifier = Modifier
-                    .size(110.dp)
-                    .scale(pulseScale)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(ZtAccent.copy(alpha = 0.25f), Color.Transparent)
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
+            // Animated Biometric Scanner Area (Lottie or High-Tech Native Laser Scan)
+            if (hasLottieAsset) {
+                val composition by rememberLottieComposition(LottieCompositionSpec.Asset("fingerprint_scan.json"))
+                val progress by animateLottieCompositionAsState(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever
+                )
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(ZtSurface)
-                        .border(2.dp, ZtAccent, CircleShape),
+                        .size(140.dp)
+                        .scale(pulseScale)
+                        .clickable { onUnlockClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Fingerprint,
-                        contentDescription = "Biometric Lock",
-                        tint = ZtAccent,
-                        modifier = Modifier.size(44.dp)
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(130.dp)
                     )
+                }
+            } else {
+                // High-Tech Cyber Laser Scanning Fingerprint (Native Compose Animation)
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .scale(pulseScale)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(ZtAccent.copy(alpha = 0.28f), Color.Transparent)
+                            )
+                        )
+                        .clickable { onUnlockClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Outer Neon Ring
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(CircleShape)
+                            .background(ZtSurface)
+                            .border(
+                                width = 2.dp,
+                                brush = Brush.sweepGradient(
+                                    colors = listOf(
+                                        ZtAccent.copy(alpha = 0.4f),
+                                        ZtAccent,
+                                        Color(0xFF38BDF8),
+                                        ZtAccent
+                                    )
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Fingerprint Icon
+                        Icon(
+                            imageVector = Icons.Default.Fingerprint,
+                            contentDescription = "Biometric Lock",
+                            tint = ZtAccent,
+                            modifier = Modifier.size(48.dp)
+                        )
+
+                        // Glowing Laser Bar sweeping up and down
+                        Box(
+                            modifier = Modifier
+                                .width(56.dp)
+                                .height(2.5.dp)
+                                .offset(y = laserOffset.dp)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color(0xFF38BDF8),
+                                            Color.White,
+                                            Color(0xFF38BDF8),
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                        )
+                    }
                 }
             }
 

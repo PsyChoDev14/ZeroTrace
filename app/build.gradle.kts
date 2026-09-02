@@ -111,6 +111,9 @@ dependencies {
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.fragment:fragment-ktx:1.7.1")
 
+    // Lottie Animation Engine
+    implementation("com.airbnb.android:lottie-compose:6.4.1")
+
     // Testing
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.ui.tooling)
