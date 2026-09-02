@@ -68,7 +68,7 @@ object XrayConfigGenerator {
                 })
                 add("sniffing", JsonObject().apply {
                     addProperty("enabled", true)
-                    addProperty("routeOnly", false)
+                    addProperty("routeOnly", true)
                     add("destOverride", JsonArray().apply {
                         add("http")
                         add("tls")
@@ -153,19 +153,18 @@ object XrayConfigGenerator {
             })
 
             // DNS outbound — Xray handles DNS queries internally via protected sockets (bypasses VPN TUN)
-            // This prevents UDP/DNS from being forwarded raw through VLESS/TCP (which can't relay UDP)
             add(JsonObject().apply {
                 addProperty("tag", "dns-out")
                 addProperty("protocol", "dns")
             })
 
-            // Block outbound (Blackhole)
+            // Block outbound (Blackhole with type none for clean packet drop)
             add(JsonObject().apply {
                 addProperty("tag", "block")
                 addProperty("protocol", "blackhole")
                 add("settings", JsonObject().apply {
                     val response = JsonObject().apply {
-                        addProperty("type", "http")
+                        addProperty("type", "none")
                     }
                     add("response", response)
                 })
@@ -175,20 +174,26 @@ object XrayConfigGenerator {
 
         // 5. DNS Settings
         val dns = JsonObject().apply {
-            // hosts: pre-resolved IPs for domains that would cause circular deadlock
-            val hosts = JsonObject()
+            val hosts = JsonObject().apply {
+                addProperty("domain:googleapis.cn", "googleapis.com")
+            }
             if (!resolvedServerIp.isNullOrBlank() && config.server.isNotEmpty()) {
-                // Server domain resolves directly via pre-resolved IP — zero roundtrip, zero deadlock
                 hosts.addProperty(config.server, resolvedServerIp)
             }
             add("hosts", hosts)
 
             add("servers", JsonArray().apply {
                 val dnsProfile = DnsProviders.findByPrimaryIp(primaryDns)
-                val primary = if (primaryDns.isNotEmpty()) primaryDns else "94.140.14.14"
-                val secondary = dnsProfile?.secondaryIp ?: "94.140.15.15"
+                val primary = if (primaryDns.isNotEmpty()) primaryDns else "1.1.1.1"
+                val secondary = dnsProfile?.secondaryIp ?: "8.8.8.8"
                 add(primary)
                 add(secondary)
+                if (primary != "1.1.1.1" && secondary != "1.1.1.1") {
+                    add("1.1.1.1")
+                }
+                if (primary != "8.8.8.8" && secondary != "8.8.8.8") {
+                    add("8.8.8.8")
+                }
             })
             addProperty("queryStrategy", "UseIPv4")
         }
@@ -198,21 +203,29 @@ object XrayConfigGenerator {
         val routing = JsonObject().apply {
             addProperty("domainStrategy", "AsIs")
             val rules = JsonArray().apply {
-                // 1. Intercept port 53 and route through Xray DNS engine via protected direct sockets
+                // 1. Intercept client port 53 DNS incoming on socks-in and route through Xray DNS engine
                 add(JsonObject().apply {
                     addProperty("type", "field")
+                    add("inboundTag", JsonArray().apply { add("socks-in") })
                     addProperty("port", "53")
                     addProperty("outboundTag", "dns-out")
                 })
 
-                // 2. Block Android Private DNS TLS (port 853) to force instant fallback to port 53 DNS
+                // 2. DNS queries originated by Xray itself -> route through proxy tunnel
+                add(JsonObject().apply {
+                    addProperty("type", "field")
+                    addProperty("port", "53")
+                    addProperty("outboundTag", "proxy")
+                })
+
+                // 3. Block Android Private DNS TLS (port 853) to force instant fallback to port 53 DNS
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     addProperty("port", "853")
                     addProperty("outboundTag", "block")
                 })
 
-                // 3. Block QUIC / HTTP3 (UDP 443) so YouTube, Chrome, and apps immediately fall back to TCP HTTPS
+                // 4. Block QUIC / HTTP3 (UDP 443) so YouTube, Chrome, and apps immediately fall back to TCP HTTPS
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     addProperty("port", "443")
@@ -220,7 +233,7 @@ object XrayConfigGenerator {
                     addProperty("outboundTag", "block")
                 })
 
-                // 4. Bypass LAN if enabled
+                // 5. Bypass LAN if enabled
                 if (bypassLan) {
                     add(JsonObject().apply {
                         addProperty("type", "field")
@@ -237,7 +250,7 @@ object XrayConfigGenerator {
                     })
                 }
 
-                // 5. Route the VPN server domain direct (so Xray's TLS handshake to VPN server doesn't loop into tunnel)
+                // 6. Route the VPN server domain direct (so Xray's TLS handshake to VPN server doesn't loop into tunnel)
                 if (config.server.isNotEmpty()) {
                     add(JsonObject().apply {
                         addProperty("type", "field")
@@ -246,7 +259,7 @@ object XrayConfigGenerator {
                     })
                 }
 
-                // 6. Route all other TCP & UDP through the proxy tunnel
+                // 7. Route all other TCP & UDP through the proxy tunnel
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     addProperty("outboundTag", "proxy")
@@ -409,11 +422,15 @@ object XrayConfigGenerator {
             stream.add("realitySettings", realitySettings)
         } else if (security == "tls") {
             val tlsSettings = JsonObject().apply {
-                addProperty("serverName", if (config.sni.isNotEmpty()) config.sni else config.server)
-                if (config.sni.isNotEmpty() && config.server.isNotEmpty() && config.sni != config.server) {
-                    addProperty("verifyPeerCertByName", config.server)
-                }
+                val sniHost = if (config.sni.isNotEmpty()) config.sni else config.server
+                addProperty("serverName", sniHost)
+                addProperty("allowInsecure", true)
                 addProperty("fingerprint", effectiveFp)
+                val alpn = JsonArray().apply {
+                    add("http/1.1")
+                    add("h2")
+                }
+                add("alpn", alpn)
             }
             stream.add("tlsSettings", tlsSettings)
         }

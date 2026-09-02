@@ -127,6 +127,7 @@ object XrayCoreManager {
                   name: tun0
                   mtu: 1400
                   ipv4: 10.233.233.2
+                  ipv6: fd00:1:fd00:1::2
 
                 socks5:
                   port: $SOCKS_PORT

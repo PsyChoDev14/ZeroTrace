@@ -112,6 +112,13 @@ class ZeroTraceVpnService : VpnService() {
                 .addDnsServer(secondaryDns)
                 .addRoute("0.0.0.0", 0)
 
+            try {
+                builder.addAddress("fd00:1:fd00:1::2", 120)
+                builder.addRoute("::", 0)
+            } catch (e: Exception) {
+                Log.w("ZeroTraceVpnService", "Could not add IPv6 route", e)
+            }
+
             // Split Tunneling Application Routing
             when (splitMode) {
                 lk.novalink.zerotrace.data.model.SplitTunnelMode.EXCLUDE_SELECTED -> {

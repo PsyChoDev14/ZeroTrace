@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AltRoute
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Dns
@@ -123,10 +124,17 @@ fun SettingsScreen(
     var utlsExpanded by remember { mutableStateOf(false) }
     var isStealthSectionExpanded by remember { mutableStateOf(false) }
     var showTileGuideDialog by remember { mutableStateOf(false) }
+    var showDiagnosticsDialog by remember { mutableStateOf(false) }
 
     if (showTileGuideDialog) {
         lk.novalink.zerotrace.ui.components.QuickSettingsTileGuideDialog(
             onDismiss = { showTileGuideDialog = false }
+        )
+    }
+
+    if (showDiagnosticsDialog) {
+        lk.novalink.zerotrace.ui.components.DiagnosticLogsDialog(
+            onDismiss = { showDiagnosticsDialog = false }
         )
     }
 
@@ -857,6 +865,41 @@ fun SettingsScreen(
                         contentDescription = "Open",
                         tint = ZtTextFaint,
                         modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            // Diagnostic Logs & Developer Support
+            SettingsCard(modifier = Modifier.clickable { showDiagnosticsDialog = true }) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.BugReport,
+                        contentDescription = "Diagnostic Logs",
+                        tint = ZtAccent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Diagnostic Logs & Support",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = ZtText
+                        )
+                        Text(
+                            text = "Export connection logs & device diagnostics to developer",
+                            fontSize = 11.5.sp,
+                            color = ZtTextMuted
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Open",
+                        tint = ZtTextFaint,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
