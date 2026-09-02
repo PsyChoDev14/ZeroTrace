@@ -67,6 +67,8 @@ object UpdateManager {
         }
     }
 
+    const val GITHUB_RELEASES_API_URL = "https://api.github.com/repos/PsyChoDev14/ZeroTrace/releases/latest"
+
     suspend fun checkForUpdates(
         context: Context,
         endpointUrl: String = DEFAULT_UPDATE_URL,
@@ -74,38 +76,32 @@ object UpdateManager {
     ): AppUpdateInfo? = withContext(Dispatchers.IO) {
         try {
             _updateState.value = UpdateState.Checking
+            val currentVersionCode = getCurrentVersionCode(context)
+            val currentVersionName = getCurrentVersionName(context)
 
-            val url = URL(endpointUrl)
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                connectTimeout = 8000
-                readTimeout = 8000
-                requestMethod = "GET"
-                setRequestProperty("User-Agent", "ZeroTrace-Android-Client")
+            // 1. First attempt: version.json
+            var updateInfo = fetchVersionJson(endpointUrl)
+
+            // 2. Fallback / Complementary attempt: GitHub Releases API
+            if (updateInfo == null || updateInfo.versionCode <= currentVersionCode) {
+                val ghUpdateInfo = fetchGitHubLatestRelease()
+                if (ghUpdateInfo != null) {
+                    val isNewerSemVer = isVersionNewer(ghUpdateInfo.versionName, currentVersionName)
+                    val isNewerCode = ghUpdateInfo.versionCode > currentVersionCode
+                    if (isNewerSemVer || isNewerCode) {
+                        updateInfo = ghUpdateInfo
+                    }
+                }
             }
 
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                val jsonString = connection.inputStream.bufferedReader().use { it.readText() }
-                val updateInfo = gson.fromJson(jsonString, AppUpdateInfo::class.java)
-
-                val currentVersion = getCurrentVersionCode(context)
-                Log.d(TAG, "Current versionCode: $currentVersion, Remote versionCode: ${updateInfo.versionCode}")
-
-                if (updateInfo.versionCode > currentVersion) {
-                    _updateState.value = UpdateState.UpdateAvailable(updateInfo)
-                    // Push high-priority system notification to inform user of new update
-                    postUpdateNotification(context, updateInfo)
-                    return@withContext updateInfo
-                } else {
-                    _updateState.value = if (isManualCheck) UpdateState.UpToDate else UpdateState.Idle
-                    return@withContext null
-                }
+            if (updateInfo != null && (updateInfo.versionCode > currentVersionCode || isVersionNewer(updateInfo.versionName, currentVersionName))) {
+                Log.d(TAG, "Update available! Current: $currentVersionName ($currentVersionCode), New: ${updateInfo.versionName} (${updateInfo.versionCode})")
+                _updateState.value = UpdateState.UpdateAvailable(updateInfo)
+                postUpdateNotification(context, updateInfo)
+                return@withContext updateInfo
             } else {
-                Log.e(TAG, "Failed to check update. HTTP response: ${connection.responseCode}")
-                _updateState.value = if (isManualCheck) {
-                    UpdateState.Error("Server returned code ${connection.responseCode}")
-                } else {
-                    UpdateState.Idle
-                }
+                Log.d(TAG, "App is up to date: $currentVersionName ($currentVersionCode)")
+                _updateState.value = if (isManualCheck) UpdateState.UpToDate else UpdateState.Idle
                 return@withContext null
             }
         } catch (e: Exception) {
@@ -117,6 +113,88 @@ object UpdateManager {
             }
             return@withContext null
         }
+    }
+
+    private fun fetchVersionJson(endpointUrl: String): AppUpdateInfo? {
+        return try {
+            val url = URL(endpointUrl)
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 6000
+                readTimeout = 6000
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", "ZeroTrace-Android-Client")
+            }
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val jsonString = connection.inputStream.bufferedReader().use { it.readText() }
+                gson.fromJson(jsonString, AppUpdateInfo::class.java)
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun fetchGitHubLatestRelease(): AppUpdateInfo? {
+        return try {
+            val url = URL(GITHUB_RELEASES_API_URL)
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 6000
+                readTimeout = 6000
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", "ZeroTrace-Android-Client")
+                setRequestProperty("Accept", "application/vnd.github+json")
+            }
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val jsonString = connection.inputStream.bufferedReader().use { it.readText() }
+                val root = com.google.gson.JsonParser.parseString(jsonString).asJsonObject
+                val tagName = root.get("tag_name")?.asString?.removePrefix("v") ?: ""
+                val body = root.get("body")?.asString ?: "Bug fixes and performance improvements."
+                val assets = root.getAsJsonArray("assets")
+
+                var downloadUrl = ""
+                if (assets != null) {
+                    for (element in assets) {
+                        val assetObj = element.asJsonObject
+                        val name = assetObj.get("name")?.asString ?: ""
+                        val browserUrl = assetObj.get("browser_download_url")?.asString ?: ""
+                        if (name.contains("arm64", ignoreCase = true) || name.endsWith(".apk", ignoreCase = true)) {
+                            downloadUrl = browserUrl
+                            break
+                        }
+                    }
+                }
+
+                if (tagName.isNotEmpty() && downloadUrl.isNotEmpty()) {
+                    AppUpdateInfo(
+                        versionCode = 999, // placeholder, compared via isVersionNewer
+                        versionName = tagName,
+                        downloadUrl = downloadUrl,
+                        changelog = body,
+                        forceUpdate = false,
+                        releaseDate = ""
+                    )
+                } else null
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun isVersionNewer(remote: String, current: String): Boolean {
+        try {
+            val remoteParts = remote.removePrefix("v").split(".").map { it.filter { c -> c.isDigit() }.toIntOrNull() ?: 0 }
+            val currentParts = current.removePrefix("v").split(".").map { it.filter { c -> c.isDigit() }.toIntOrNull() ?: 0 }
+
+            val maxLen = maxOf(remoteParts.size, currentParts.size)
+            for (i in 0 until maxLen) {
+                val r = if (i < remoteParts.size) remoteParts[i] else 0
+                val c = if (i < currentParts.size) currentParts[i] else 0
+                if (r > c) return true
+                if (r < c) return false
+            }
+        } catch (e: Exception) {
+            // Ignore parse errors
+        }
+        return false
     }
 
     /**
