@@ -107,14 +107,17 @@ object DiagnosticLogManager {
                     "-v",
                     "time",
                     "-t",
-                    "150",
+                    "300",
                     "ZeroTrace:V",
                     "ZeroTrace-Core:V",
-                    "ZeroTraceVpnService:V",
+                    "ZeroTrace-Update:V",
                     "ZeroTrace-Telemetry:V",
+                    "ZeroTraceVpnService:V",
                     "libXray:V",
                     "TProxyService:V",
+                    "hev-socks5-tunnel:V",
                     "AndroidRuntime:E",
+                    "System.err:W",
                     "*:S"
                 )
             )
@@ -127,14 +130,18 @@ object DiagnosticLogManager {
             reader.close()
             process.destroy()
 
-            // If tag-filtered logcat returned few lines, fallback to general logcat tail
+            // Fallback: if tag-filtered logcat returned few lines, pull broader logcat and grep for relevant keywords
             if (logLines.size < 5) {
-                val fallbackProcess = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-t", "80"))
+                val fallbackProcess = Runtime.getRuntime().exec(arrayOf("logcat", "-d", "-t", "200"))
                 val fbReader = BufferedReader(InputStreamReader(fallbackProcess.inputStream))
                 var fbLine: String?
                 while (fbReader.readLine().also { fbLine = it } != null) {
                     fbLine?.let {
-                        if (it.contains("ZeroTrace", ignoreCase = true) || it.contains("xray", ignoreCase = true) || it.contains("tproxy", ignoreCase = true)) {
+                        val lower = it.lowercase()
+                        if (lower.contains("zerotrace") || lower.contains("xray") ||
+                            lower.contains("tproxy") || lower.contains("hev") ||
+                            lower.contains("vpn") || lower.contains("sockstun") ||
+                            lower.contains("libxray") || lower.contains("novalink")) {
                             logLines.add(it)
                         }
                     }

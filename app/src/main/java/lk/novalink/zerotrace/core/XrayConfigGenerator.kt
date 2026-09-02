@@ -203,7 +203,8 @@ object XrayConfigGenerator {
         val routing = JsonObject().apply {
             addProperty("domainStrategy", "AsIs")
             val rules = JsonArray().apply {
-                // 1. Intercept client port 53 DNS incoming on socks-in and route through Xray DNS engine
+                // 1. Intercept client port 53 DNS queries coming from tun2socks (socks-in)
+                //    Route through Xray DNS engine (which uses protected sockets, bypassing the TUN)
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     add("inboundTag", JsonArray().apply { add("socks-in") })
@@ -211,29 +212,27 @@ object XrayConfigGenerator {
                     addProperty("outboundTag", "dns-out")
                 })
 
-                // 2. DNS queries originated by Xray itself -> route through proxy tunnel
-                add(JsonObject().apply {
-                    addProperty("type", "field")
-                    addProperty("port", "53")
-                    addProperty("outboundTag", "proxy")
-                })
+                // NOTE: Removed generic "port 53 -> proxy" rule that caused DNS deadlocks.
+                // Xray's own DNS outbound uses protected DialerController sockets (bypass VPN TUN),
+                // so it does NOT need a routing rule and must NOT be routed to proxy (causes loop).
 
-                // 3. Block Android Private DNS TLS (port 853) to force instant fallback to port 53 DNS
+                // 2. Block Android Private DNS over TLS (port 853) — force plain port 53 DNS
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     addProperty("port", "853")
+                    addProperty("network", "tcp")
                     addProperty("outboundTag", "block")
                 })
 
-                // 4. Block QUIC / HTTP3 (UDP 443) so YouTube, Chrome, and apps immediately fall back to TCP HTTPS
+                // 3. Block QUIC / HTTP3 (UDP 443) — YouTube, Chrome instantly fall back to TCP HTTPS
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     addProperty("port", "443")
-                    add("network", JsonArray().apply { add("udp") })
+                    addProperty("network", "udp")
                     addProperty("outboundTag", "block")
                 })
 
-                // 5. Bypass LAN if enabled
+                // 4. Bypass LAN if enabled
                 if (bypassLan) {
                     add(JsonObject().apply {
                         addProperty("type", "field")
@@ -250,8 +249,14 @@ object XrayConfigGenerator {
                     })
                 }
 
-                // 6. Route the VPN server domain direct (so Xray's TLS handshake to VPN server doesn't loop into tunnel)
-                if (config.server.isNotEmpty()) {
+                // 5. Route the VPN server IP/domain direct so Xray's TLS handshake doesn't re-enter TUN
+                if (!resolvedServerIp.isNullOrBlank()) {
+                    add(JsonObject().apply {
+                        addProperty("type", "field")
+                        addProperty("outboundTag", "direct")
+                        add("ip", JsonArray().apply { add(resolvedServerIp) })
+                    })
+                } else if (config.server.isNotEmpty()) {
                     add(JsonObject().apply {
                         addProperty("type", "field")
                         addProperty("outboundTag", "direct")
@@ -259,14 +264,11 @@ object XrayConfigGenerator {
                     })
                 }
 
-                // 7. Route all other TCP & UDP through the proxy tunnel
+                // 6. Route everything else (TCP + UDP) through proxy tunnel
                 add(JsonObject().apply {
                     addProperty("type", "field")
                     addProperty("outboundTag", "proxy")
-                    add("network", JsonArray().apply {
-                        add("tcp")
-                        add("udp")
-                    })
+                    addProperty("network", "tcp,udp")
                 })
             }
             add("rules", rules)

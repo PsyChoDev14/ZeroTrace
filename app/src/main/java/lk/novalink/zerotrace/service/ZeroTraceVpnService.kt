@@ -113,7 +113,7 @@ class ZeroTraceVpnService : VpnService() {
                 .addRoute("0.0.0.0", 0)
 
             try {
-                builder.addAddress("fd00:1:fd00:1::2", 120)
+                builder.addAddress("fd00:1:fd00:1::2", 64)
                 builder.addRoute("::", 0)
             } catch (e: Exception) {
                 Log.w("ZeroTraceVpnService", "Could not add IPv6 route", e)

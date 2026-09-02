@@ -1,8 +1,8 @@
 {
-  "versionCode": 15,
-  "versionName": "1.2.3",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.3/ZeroTrace-v1.2.3-arm64-v8a.apk",
-  "changelog": "• Dual-Stack IPv6 Carrier Sinkhole: 100% fix for Airtel/Dialog 0-balance stall\n• Clean QUIC Drop: Instant 0ms fallback to TCP HTTPS without handshake corruption\n• DNS Routing Engine Fix: Eliminated recursive DNS deadlocks\n• Universal Bug-Host SSL Handshake: Full allowInsecure & ALPN compatibility\n• In-App Diagnostic Logs & 1-Tap WhatsApp Support\n• Android 13+ Notification Permissions",
+  "versionCode": 16,
+  "versionName": "1.2.4",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.4/ZeroTrace-v1.2.4-arm64-v8a.apk",
+  "changelog": "• Critical fix: Eliminated Xray DNS routing deadlock causing no internet\n• Fixed Xray routing JSON format for UDP/TCP (string not array)\n• Fixed IPv6 TUN prefix from /120 to /64 for Android 16 compatibility\n• Server IP now routed direct (not domain) preventing TLS handshake loop\n• Improved Diagnostic Logs: captures all engine, crash, and VPN logs",
   "forceUpdate": false,
   "releaseDate": "2026-09-02",
   "minSupportedVersion": 1
