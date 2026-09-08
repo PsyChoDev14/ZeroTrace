@@ -12,16 +12,26 @@
       "methods": ["GET", "OPTIONS"]
     },
     {
+      "src": "/api/force-update",
+      "dest": "/api/force-update.js",
+      "methods": ["GET", "POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/admin",
+      "dest": "/api/admin.js",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
       "src": "/admin(.*)",
-      "dest": "/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/dashboard(.*)",
-      "dest": "/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/public/index.html"
+      "dest": "/index.html"
     }
   ]
 }
