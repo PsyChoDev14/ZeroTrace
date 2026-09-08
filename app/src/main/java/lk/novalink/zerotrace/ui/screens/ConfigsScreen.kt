@@ -91,7 +91,7 @@ fun ConfigsScreen(
                 containerColor = ZtAccent,
                 contentColor = Color.White,
                 shape = CircleShape,
-                modifier = Modifier.padding(bottom = 60.dp)
+                modifier = Modifier.padding(bottom = 96.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,

@@ -124,7 +124,8 @@ fun HomeScreen(
             .fillMaxSize()
             .background(ZtBg)
             .statusBarsPadding()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 120.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Top Bar: ZeroTrace Wordmark & Action Icons

@@ -45,16 +45,24 @@ import lk.novalink.zerotrace.ui.theme.ZtBgElevated
 import lk.novalink.zerotrace.ui.theme.ZtBorder
 import lk.novalink.zerotrace.ui.theme.ZtText
 import lk.novalink.zerotrace.ui.theme.ZtTextFaint
+import lk.novalink.zerotrace.ui.theme.ZtTextMuted
+
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import lk.novalink.zerotrace.ui.theme.LiquidGlassTokens
+import lk.novalink.zerotrace.ui.theme.liquidGlass
 
 enum class NavTab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Default.Shield),
     CONFIGS("Configs", Icons.Default.Language),
-    STATS("Statistics", Icons.Default.BarChart),
+    STATS("Stats", Icons.Default.BarChart),
     SETTINGS("Settings", Icons.Default.Settings)
 }
 
 /**
- * Native Jetpack Compose implementation of BottomNav.tsx
+ * iOS Liquid Glass Floating Navbar
+ * Translucent frosted acrylic material with Apple specular top-edge highlights,
+ * floating elevation shadow, and spring-animated tab capsules.
  */
 @Composable
 fun BottomNav(
@@ -62,86 +70,115 @@ fun BottomNav(
     onTabSelected: (NavTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptic = LocalHapticFeedback.current
+    val navShape = RoundedCornerShape(32.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(ZtBgElevated)
-            .border(width = 1.dp, color = ZtBorder, shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp))
             .navigationBarsPadding()
-            .padding(top = 8.dp, bottom = 8.dp)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+        // Floating Liquid Glass Island
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .liquidGlass(
+                    shape = navShape,
+                    elevation = 20.dp,
+                    borderWidth = 1.2.dp
+                )
+                .padding(horizontal = 6.dp, vertical = 6.dp)
         ) {
-            NavTab.entries.forEach { tab ->
-                val isActive = tab == activeTab
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NavTab.entries.forEach { tab ->
+                    val isActive = tab == activeTab
 
-                val iconColor by animateColorAsState(
-                    targetValue = if (isActive) ZtAccent else ZtTextFaint,
-                    animationSpec = tween(150),
-                    label = "tabIconColor"
-                )
+                    val iconColor by animateColorAsState(
+                        targetValue = if (isActive) ZtAccent else ZtTextMuted,
+                        animationSpec = tween(180),
+                        label = "tabIconColor"
+                    )
 
-                val textColor by animateColorAsState(
-                    targetValue = if (isActive) ZtText else ZtTextFaint,
-                    animationSpec = tween(150),
-                    label = "tabTextColor"
-                )
+                    val textColor by animateColorAsState(
+                        targetValue = if (isActive) ZtText else ZtTextFaint,
+                        animationSpec = tween(180),
+                        label = "tabTextColor"
+                    )
 
-                val iconScale by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = if (isActive) 1.08f else 1.0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    ),
-                    label = "tabScale"
-                )
-
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {
-                                if (!isActive) {
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                    onTabSelected(tab)
-                                }
-                            }
+                    val iconScale by androidx.compose.animation.core.animateFloatAsState(
+                        targetValue = if (isActive) 1.14f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
                         ),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Pill shape indicator behind active tab icon
-                    Box(
+                        label = "tabScale"
+                    )
+
+                    val pillBgColor by animateColorAsState(
+                        targetValue = if (isActive) LiquidGlassTokens.ActivePillBg else Color.Transparent,
+                        animationSpec = tween(200),
+                        label = "pillBgColor"
+                    )
+
+                    val pillBorderColor by animateColorAsState(
+                        targetValue = if (isActive) LiquidGlassTokens.ActivePillBorder else Color.Transparent,
+                        animationSpec = tween(200),
+                        label = "pillBorderColor"
+                    )
+
+                    Column(
                         modifier = Modifier
-                            .size(width = 48.dp, height = 28.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(if (isActive) ZtAccentSoft else Color.Transparent),
-                        contentAlignment = Alignment.Center
+                            .weight(1f)
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = {
+                                    if (!isActive) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        onTabSelected(tab)
+                                    }
+                                }
+                            )
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = tab.label,
-                            tint = iconColor,
+                        // Frosted Capsule Active Indicator
+                        Box(
                             modifier = Modifier
-                                .size(19.dp)
-                                .scale(iconScale)
+                                .size(width = 54.dp, height = 32.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(pillBgColor)
+                                .border(1.dp, pillBorderColor, RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.label,
+                                tint = iconColor,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .scale(iconScale)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = tab.label,
+                            fontSize = 11.sp,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                            color = textColor,
+                            letterSpacing = (-0.2).sp
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(3.dp))
-
-                    Text(
-                        text = tab.label,
-                        fontSize = 10.5.sp,
-                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
-                        color = textColor
-                    )
                 }
             }
         }

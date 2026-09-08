@@ -114,6 +114,9 @@ dependencies {
     // Lottie Animation Engine
     implementation("com.airbnb.android:lottie-compose:6.4.1")
 
+    // Android WorkManager for Background Periodic Updates & Notifications
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+
     // Testing
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.ui.tooling)

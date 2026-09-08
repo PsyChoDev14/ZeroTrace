@@ -104,7 +104,7 @@ fun StatisticsScreen(
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp)
-            .padding(bottom = 80.dp)
+            .padding(bottom = 104.dp)
     ) {
         // Header
         Text(

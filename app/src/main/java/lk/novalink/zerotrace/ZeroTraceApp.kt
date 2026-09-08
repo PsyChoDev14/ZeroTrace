@@ -26,6 +26,9 @@ class ZeroTraceApp : Application() {
         settingsRepository = SettingsRepository(this)
         trafficStatsRepository = TrafficStatsRepository(this)
         installedAppsRepository = lk.novalink.zerotrace.data.repository.InstalledAppsRepository(this)
+
+        // Schedule battery-friendly background checks for updates & notifications
+        lk.novalink.zerotrace.core.UpdateCheckWorker.schedulePeriodicCheck(this)
     }
 
     companion object {

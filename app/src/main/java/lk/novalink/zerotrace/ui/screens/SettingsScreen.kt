@@ -153,7 +153,7 @@ fun SettingsScreen(
             .background(ZtBg)
             .statusBarsPadding()
             .verticalScroll(scrollState)
-            .padding(bottom = 100.dp)
+            .padding(bottom = 140.dp)
     ) {
         // Top Header
         Row(
