@@ -29,3 +29,6 @@ dashboard/
 analytics.sh
 
 .vercel
+
+# Separated Desktop Repository
+desktop/
