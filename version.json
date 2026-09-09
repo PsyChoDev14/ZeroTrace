@@ -1,8 +1,8 @@
 {
-  "versionCode": 20,
-  "versionName": "1.2.8",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.8/ZeroTrace-v1.2.8-arm64-v8a.apk",
-  "changelog": "• \"Settings is a System\" Architecture: Complete UX redesign inspired by designmotionhq\n• Instant Fuzzy Search: Real-time search bar with keyword matching & auto-expanding settings accordions\n• Changed. Visibly. & 1-Click Reset: Modified badges, glowing accent borders, and inline ↺ Default pill\n• Micro-Feedback Animations: Transient emerald ✓ Saved micro-pill next to active toggles and dropdowns\n• Progressive Disclosure: Active status counters (e.g. ● 2 ACTIVE) and collapsible advanced stealth controls\n• Quarantined Danger Zone: Destructive actions isolated behind confirmation dialogs",
+  "versionCode": 21,
+  "versionName": "1.2.9",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.9/ZeroTrace-v1.2.9-arm64-v8a.apk",
+  "changelog": "• Desktop-Matched Floating Navbar: Balanced 5-element Liquid Glass island with center (+) action button\n• Quick Add Config Anywhere: 1-tap (+) button on floating navbar opens config import instantly from any screen\n• Dynamic Server Badge: Live indicator showing saved configuration count on Servers tab\n• Clean De-cluttered Screens: Removed redundant bottom FABs for a distraction-free AMOLED experience\n• Smooth Spring Animations & Haptics: Refined physics and tactile feedback across all tabs",
   "forceUpdate": false,
   "releaseDate": "2026-09-09",
   "minSupportedVersion": 1

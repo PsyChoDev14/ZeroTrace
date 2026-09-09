@@ -84,22 +84,7 @@ fun ConfigsScreen(
     }
 
     Scaffold(
-        containerColor = ZtBg,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddConfigClick,
-                containerColor = ZtAccent,
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier.padding(bottom = 96.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Config",
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-        }
+        containerColor = ZtBg
     ) { paddingValues ->
         Column(
             modifier = modifier

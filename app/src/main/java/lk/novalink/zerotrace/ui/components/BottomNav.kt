@@ -2,26 +2,28 @@ package lk.novalink.zerotrace.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
@@ -33,154 +35,278 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import lk.novalink.zerotrace.ui.theme.ZtAccent
-import lk.novalink.zerotrace.ui.theme.ZtAccentSoft
-import lk.novalink.zerotrace.ui.theme.ZtBgElevated
-import lk.novalink.zerotrace.ui.theme.ZtBorder
-import lk.novalink.zerotrace.ui.theme.ZtText
-import lk.novalink.zerotrace.ui.theme.ZtTextFaint
-import lk.novalink.zerotrace.ui.theme.ZtTextMuted
-
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import lk.novalink.zerotrace.ui.theme.LiquidGlassTokens
 import lk.novalink.zerotrace.ui.theme.liquidGlass
 
 enum class NavTab(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Default.Shield),
-    CONFIGS("Configs", Icons.Default.Language),
+    CONFIGS("Servers", Icons.Default.Language),
     STATS("Stats", Icons.Default.BarChart),
     SETTINGS("Settings", Icons.Default.Settings)
 }
 
 /**
- * iOS Liquid Glass Floating Navbar
- * Translucent frosted acrylic material with Apple specular top-edge highlights,
- * floating elevation shadow, and spring-animated tab capsules.
+ * iOS Liquid Glass Floating Navbar (Obsidian Dark Cyber Theme • Matched to Desktop Design)
+ * - Ultra-frosted acrylic capsule with specular top-edge highlight
+ * - Balanced 5-element island: [Home] [Servers] ( + Add Node ) [Stats] [Settings]
+ * - Translucent sapphire liquid glass active capsule with zero border flash or layout shift
+ * - Center elevated vibrant circular (+) button with smooth rotation, spring bounce & glow
  */
 @Composable
 fun BottomNav(
     activeTab: NavTab,
     onTabSelected: (NavTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAddConfigClick: () -> Unit = {},
+    serverCount: Int = 0
 ) {
-    val haptic = LocalHapticFeedback.current
-    val navShape = RoundedCornerShape(32.dp)
-
     Box(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 24.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
+        val navShape = RoundedCornerShape(32.dp)
+
         // Floating Liquid Glass Island
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .widthIn(max = 360.dp)
                 .liquidGlass(
                     shape = navShape,
-                    elevation = 20.dp,
-                    borderWidth = 1.2.dp
+                    elevation = 24.dp,
+                    borderWidth = 1.dp
                 )
-                .padding(horizontal = 6.dp, vertical = 6.dp)
+                .padding(horizontal = 10.dp, vertical = 7.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                NavTab.entries.forEach { tab ->
-                    val isActive = tab == activeTab
-
-                    val iconColor by animateColorAsState(
-                        targetValue = if (isActive) ZtAccent else ZtTextMuted,
-                        animationSpec = tween(180),
-                        label = "tabIconColor"
+                // Left Tabs: Home & Servers
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    NavTabItem(
+                        tab = NavTab.HOME,
+                        isActive = activeTab == NavTab.HOME,
+                        onClick = { onTabSelected(NavTab.HOME) }
                     )
 
-                    val textColor by animateColorAsState(
-                        targetValue = if (isActive) ZtText else ZtTextFaint,
-                        animationSpec = tween(180),
-                        label = "tabTextColor"
+                    NavTabItem(
+                        tab = NavTab.CONFIGS,
+                        isActive = activeTab == NavTab.CONFIGS,
+                        badgeCount = if (serverCount > 0 && activeTab != NavTab.CONFIGS) serverCount else null,
+                        onClick = { onTabSelected(NavTab.CONFIGS) }
+                    )
+                }
+
+                // Center Elevated Action Button (+)
+                CenterAddButton(
+                    onClick = onAddConfigClick
+                )
+
+                // Right Tabs: Stats & Settings
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    NavTabItem(
+                        tab = NavTab.STATS,
+                        isActive = activeTab == NavTab.STATS,
+                        onClick = { onTabSelected(NavTab.STATS) }
                     )
 
-                    val iconScale by androidx.compose.animation.core.animateFloatAsState(
-                        targetValue = if (isActive) 1.14f else 1.0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        ),
-                        label = "tabScale"
+                    NavTabItem(
+                        tab = NavTab.SETTINGS,
+                        isActive = activeTab == NavTab.SETTINGS,
+                        onClick = { onTabSelected(NavTab.SETTINGS) }
                     )
-
-                    val pillBgColor by animateColorAsState(
-                        targetValue = if (isActive) LiquidGlassTokens.ActivePillBg else Color.Transparent,
-                        animationSpec = tween(200),
-                        label = "pillBgColor"
-                    )
-
-                    val pillBorderColor by animateColorAsState(
-                        targetValue = if (isActive) LiquidGlassTokens.ActivePillBorder else Color.Transparent,
-                        animationSpec = tween(200),
-                        label = "pillBorderColor"
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(24.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = {
-                                    if (!isActive) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        onTabSelected(tab)
-                                    }
-                                }
-                            )
-                            .padding(vertical = 4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // Frosted Capsule Active Indicator
-                        Box(
-                            modifier = Modifier
-                                .size(width = 54.dp, height = 32.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(pillBgColor)
-                                .border(1.dp, pillBorderColor, RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label,
-                                tint = iconColor,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .scale(iconScale)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Text(
-                            text = tab.label,
-                            fontSize = 11.sp,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                            color = textColor,
-                            letterSpacing = (-0.2).sp
-                        )
-                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun NavTabItem(
+    tab: NavTab,
+    isActive: Boolean,
+    badgeCount: Int? = null,
+    onClick: () -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    val itemShape = RoundedCornerShape(14.dp)
+
+    val iconColor by animateColorAsState(
+        targetValue = if (isActive) Color(0xFF60A5FA) else Color(0x8CFFFFFF),
+        animationSpec = tween(180),
+        label = "tabIconColor"
+    )
+
+    val pillBgColor by animateColorAsState(
+        targetValue = if (isActive) Color(0x333B82F6) else Color.Transparent,
+        animationSpec = tween(180),
+        label = "pillBgColor"
+    )
+
+    val pillBorderColor by animateColorAsState(
+        targetValue = if (isActive) Color(0x6660A5FA) else Color.Transparent,
+        animationSpec = tween(180),
+        label = "pillBorderColor"
+    )
+
+    val iconScale by animateFloatAsState(
+        targetValue = if (isActive) 1.10f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "tabScale"
+    )
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.92f else 1.0f,
+        animationSpec = spring(stiffness = Spring.StiffnessHigh),
+        label = "pressScale"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .scale(pressScale)
+            .clip(itemShape)
+            .background(pillBgColor)
+            .border(1.dp, pillBorderColor, itemShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    if (!isActive) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onClick()
+                    }
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = tab.icon,
+            contentDescription = tab.label,
+            tint = iconColor,
+            modifier = Modifier
+                .size(21.dp)
+                .scale(iconScale)
+        )
+
+        // Notification badge for server count
+        if (badgeCount != null && badgeCount > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-2).dp, y = 2.dp)
+                    .size(15.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF2563EB))
+                    .border(1.dp, Color(0x66FFFFFF), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (badgeCount > 99) "99+" else badgeCount.toString(),
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CenterAddButton(
+    onClick: () -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.90f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "centerButtonScale"
+    )
+
+    val rotation by animateFloatAsState(
+        targetValue = if (isPressed) 90f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "centerButtonRotation"
+    )
+
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+            .size(46.dp)
+            .scale(scale)
+            .shadow(
+                elevation = 14.dp,
+                shape = CircleShape,
+                ambientColor = Color(0x402563EB),
+                spotColor = Color(0x992563EB)
+            )
+            .clip(CircleShape)
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF2563EB),
+                        Color(0xFF4F46E5),
+                        Color(0xFF3B82F6)
+                    )
+                )
+            )
+            .border(1.2.dp, Color(0x59FFFFFF), CircleShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onClick()
+                }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "Add Server Configuration",
+            tint = Color.White,
+            modifier = Modifier
+                .size(23.dp)
+                .rotate(rotation)
+        )
     }
 }

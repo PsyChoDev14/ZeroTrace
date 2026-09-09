@@ -320,10 +320,12 @@ class MainActivity : FragmentActivity() {
                                     }
                                 }
 
-                                // Bottom Navigation Bar from React Design
+                                // Bottom Navigation Bar from React/Desktop Design
                                 BottomNav(
                                     activeTab = currentTab,
                                     onTabSelected = { currentTab = it },
+                                    onAddConfigClick = { showAddDialog = true },
+                                    serverCount = configs.size,
                                     modifier = Modifier.align(Alignment.BottomCenter)
                                 )
                             }
