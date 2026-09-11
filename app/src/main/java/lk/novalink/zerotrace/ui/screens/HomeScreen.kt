@@ -1,17 +1,14 @@
 package lk.novalink.zerotrace.ui.screens
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -37,8 +34,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
@@ -89,8 +84,8 @@ import lk.novalink.zerotrace.ui.theme.ZtTextMuted
 fun HomeScreen(
     vpnState: VpnState,
     selectedConfig: ProxyConfig?,
-    downloadSpeed: Long,
-    uploadSpeed: Long,
+    downloadSpeed: Long = 0L,
+    uploadSpeed: Long = 0L,
     onConnectToggle: () -> Unit,
     onNavigateToConfigs: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -416,74 +411,7 @@ fun HomeScreen(
                 }
             }
 
-            // Real-Time Speed Bar: ONLY shown when connected to eliminate clutter!
-            AnimatedVisibility(
-                visible = isConnected,
-                enter = fadeIn(tween(250)) + expandVertically(tween(250)),
-                exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
-            ) {
-                Column {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(ZtSurface)
-                            .border(1.dp, ZtBorder, RoundedCornerShape(14.dp))
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Download
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowDownward,
-                                contentDescription = null,
-                                tint = ZtSuccess,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = formatSpeed(downloadSpeed),
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = ZtText
-                            )
-                        }
 
-                        Box(
-                            modifier = Modifier
-                                .height(14.dp)
-                                .width(1.dp)
-                                .background(ZtBorder)
-                        )
-
-                        // Upload
-                        Row(
-                            modifier = Modifier.weight(1f).padding(start = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowUpward,
-                                contentDescription = null,
-                                tint = ZtAccent,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = formatSpeed(uploadSpeed),
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = ZtText
-                            )
-                        }
-                    }
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(90.dp))
@@ -542,11 +470,6 @@ private fun StatusPill(state: VpnState) {
     }
 }
 
-private fun formatSpeed(bytes: Long): String = when {
-    bytes >= 1024 * 1024 -> "%.1f MB/s".format(bytes / (1024.0 * 1024.0))
-    bytes >= 1024 -> "%.1f KB/s".format(bytes / 1024.0)
-    else -> "$bytes B/s"
-}
 
 private fun formatDuration(seconds: Long): String {
     val hrs = seconds / 3600

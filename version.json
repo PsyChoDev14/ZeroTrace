@@ -1,9 +1,9 @@
 {
-  "versionCode": 21,
-  "versionName": "1.2.9",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.2.9/ZeroTrace-v1.2.9-arm64-v8a.apk",
-  "changelog": "• Desktop-Matched Floating Navbar: Balanced 5-element Liquid Glass island with center (+) action button\n• Quick Add Config Anywhere: 1-tap (+) button on floating navbar opens config import instantly from any screen\n• Dynamic Server Badge: Live indicator showing saved configuration count on Servers tab\n• Clean De-cluttered Screens: Removed redundant bottom FABs for a distraction-free AMOLED experience\n• Smooth Spring Animations & Haptics: Refined physics and tactile feedback across all tabs",
+  "versionCode": 22,
+  "versionName": "1.3.0",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.3.0/ZeroTrace-v1.3.0-arm64-v8a.apk",
+  "changelog": "• Distraction-Free Home Screen: Removed real-time speed display for a cleaner, ultra-minimal AMOLED aesthetic\n• Performance & UI Polish: Optimized layout rendering and reduced UI recomposition overhead during active sessions\n• Tunnel Stability: Streamlined connection state transitions",
   "forceUpdate": false,
-  "releaseDate": "2026-09-09",
+  "releaseDate": "2026-09-11",
   "minSupportedVersion": 1
 }
