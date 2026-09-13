@@ -2,12 +2,15 @@ package lk.novalink.zerotrace.core
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import lk.novalink.zerotrace.ZeroTraceApp
 import lk.novalink.zerotrace.data.model.ProxyConfig
 import lk.novalink.zerotrace.service.ZeroTraceVpnService
+import lk.novalink.zerotrace.widget.ZeroTraceWidgetProvider
 
 object VpnTunnelManager {
 
@@ -22,6 +25,11 @@ object VpnTunnelManager {
 
     fun updateState(newState: VpnState) {
         _vpnState.value = newState
+        try {
+            ZeroTraceWidgetProvider.updateAllWidgets(ZeroTraceApp.instance, newState)
+        } catch (e: Exception) {
+            // ignore if app instance not ready yet
+        }
     }
 
     fun updateSpeed(downBytesPerSec: Long, upBytesPerSec: Long) {
@@ -30,7 +38,7 @@ object VpnTunnelManager {
     }
 
     fun startVpn(context: Context, config: ProxyConfig) {
-        _vpnState.value = VpnState.Connecting
+        updateState(VpnState.Connecting)
         val intent = Intent(context, ZeroTraceVpnService::class.java).apply {
             action = ZeroTraceVpnService.ACTION_START
             putExtra(ZeroTraceVpnService.EXTRA_CONFIG_ID, config.id)
@@ -43,10 +51,32 @@ object VpnTunnelManager {
     }
 
     fun stopVpn(context: Context) {
-        _vpnState.value = VpnState.Stopping
+        updateState(VpnState.Stopping)
+
+        // 1. Direct teardown if service instance is active in this process (zero latency)
+        val runningService = ZeroTraceVpnService.instance
+        if (runningService != null) {
+            try {
+                runningService.stopVpnTunnel()
+                return
+            } catch (e: Exception) {
+                Log.e("VpnTunnelManager", "Error calling stopVpnTunnel directly", e)
+            }
+        }
+
+        // 2. Fallback to startService / startForegroundService for cross-component IPC
         val intent = Intent(context, ZeroTraceVpnService::class.java).apply {
             action = ZeroTraceVpnService.ACTION_STOP
         }
-        context.startService(intent)
+        try {
+            context.startService(intent)
+        } catch (e: Exception) {
+            try {
+                ContextCompat.startForegroundService(context, intent)
+            } catch (ex: Exception) {
+                Log.e("VpnTunnelManager", "Failed to deliver STOP_VPN intent", ex)
+                updateState(VpnState.Disconnected)
+            }
+        }
     }
 }

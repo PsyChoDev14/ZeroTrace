@@ -1,9 +1,9 @@
 {
-  "versionCode": 22,
-  "versionName": "1.3.0",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.3.0/ZeroTrace-v1.3.0-arm64-v8a.apk",
-  "changelog": "• Distraction-Free Home Screen: Removed real-time speed display for a cleaner, ultra-minimal AMOLED aesthetic\n• Performance & UI Polish: Optimized layout rendering and reduced UI recomposition overhead during active sessions\n• Tunnel Stability: Streamlined connection state transitions",
+  "versionCode": 23,
+  "versionName": "1.3.1",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.3.1/ZeroTrace-v1.3.1-arm64-v8a.apk",
+  "changelog": "• 1x1 Quick Connect Home Screen Widget: 1-tap circular widget on your home screen with real-time tunnel state sync\n• Critical VPN Teardown Fix: Fixed disconnect deadlock ensuring instant, freeze-free tunnel termination\n• Settings Screen Integration: 1-tap widget pin shortcut in Settings > Updates & Support",
   "forceUpdate": false,
-  "releaseDate": "2026-09-11",
+  "releaseDate": "2026-09-13",
   "minSupportedVersion": 1
 }

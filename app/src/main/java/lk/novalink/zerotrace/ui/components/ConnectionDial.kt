@@ -81,25 +81,27 @@ fun ConnectionDial(
     modifier: Modifier = Modifier
 ) {
     val isConnected = state is VpnState.Connected
-    val isConnecting = state is VpnState.Connecting || state is VpnState.Stopping
+    val isConnecting = state is VpnState.Connecting
+    val isStopping = state is VpnState.Stopping
+    val isBusy = isConnecting || isStopping
     val isError = state is VpnState.Error
 
     // Ambient breathing aura transition
     val infiniteTransition = rememberInfiniteTransition(label = "dialAnimations")
     val haloScale by infiniteTransition.animateFloat(
         initialValue = 0.96f,
-        targetValue = if (isConnected) 1.06f else if (isConnecting) 1.04f else 0.98f,
+        targetValue = if (isConnected) 1.06f else if (isBusy) 1.04f else 0.98f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isConnecting) 900 else 2400, easing = FastOutSlowInEasing),
+            animation = tween(if (isBusy) 900 else 2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "haloScale"
     )
     val haloAlpha by infiniteTransition.animateFloat(
         initialValue = 0.15f,
-        targetValue = if (isConnected) 0.38f else if (isConnecting) 0.32f else 0.05f,
+        targetValue = if (isConnected) 0.38f else if (isBusy) 0.32f else 0.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(if (isConnecting) 900 else 2400, easing = FastOutSlowInEasing),
+            animation = tween(if (isBusy) 900 else 2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "haloAlpha"
@@ -204,6 +206,7 @@ fun ConnectionDial(
                     when {
                         isConnected -> ZtSuccessSoft.copy(alpha = haloAlpha)
                         isConnecting -> ZtAccentRing.copy(alpha = haloAlpha)
+                        isStopping -> ZtTrack.copy(alpha = haloAlpha)
                         else -> Color.Transparent
                     }
                 )
@@ -339,12 +342,14 @@ fun ConnectionDial(
                             isError -> Icons.Default.Refresh
                             isConnected -> Icons.Default.Shield
                             isConnecting -> Icons.Default.Lock
+                            isStopping -> Icons.Default.PowerSettingsNew
                             else -> Icons.Default.PowerSettingsNew
                         },
                         contentDescription = "Connection Toggle",
                         tint = when {
                             isConnected -> ZtSuccess
                             isConnecting -> ZtAccent
+                            isStopping -> ZtTextMuted
                             isError -> ZtDanger
                             !hasConfig -> ZtAccent
                             else -> ZtText
@@ -361,6 +366,7 @@ fun ConnectionDial(
                         !hasConfig -> "ADD CONFIG"
                         isConnected -> "PROTECTED"
                         isConnecting -> "SECURING"
+                        isStopping -> "STOPPING"
                         isError -> "RETRY"
                         else -> "CONNECT"
                     },
@@ -370,6 +376,7 @@ fun ConnectionDial(
                     color = when {
                         isConnected -> ZtSuccess
                         isConnecting -> ZtAccent
+                        isStopping -> ZtTextMuted
                         isError -> ZtDanger
                         else -> ZtText
                     }
@@ -381,7 +388,8 @@ fun ConnectionDial(
                 Text(
                     text = when {
                         isConnected -> "Tap to Disconnect"
-                        isConnecting -> "Please wait…"
+                        isConnecting -> "Securing tunnel…"
+                        isStopping -> "Disconnecting…"
                         isError -> "Check Network"
                         !hasConfig -> "Import Server"
                         else -> "Tap to Start"

@@ -248,6 +248,21 @@ fun HomeScreen(
                             color = ZtTextMuted
                         )
                     }
+                    state is VpnState.Stopping -> {
+                        Text(
+                            text = "Disconnecting…",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = ZtTextMuted
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Closing secure tunnel",
+                            fontSize = 12.sp,
+                            color = ZtTextFaint
+                        )
+                    }
                     state is VpnState.Error -> {
                         Text(
                             text = "Connection Failed",
@@ -421,12 +436,14 @@ fun HomeScreen(
 @Composable
 private fun StatusPill(state: VpnState) {
     val isConnected = state is VpnState.Connected
-    val isConnecting = state is VpnState.Connecting || state is VpnState.Stopping
+    val isConnecting = state is VpnState.Connecting
+    val isStopping = state is VpnState.Stopping
     val isError = state is VpnState.Error
 
     val (label, dotColor) = when {
         isConnected -> Pair("PROTECTED", ZtSuccess)
         isConnecting -> Pair("CONNECTING", ZtAccent)
+        isStopping -> Pair("DISCONNECTING", ZtTextMuted)
         isError -> Pair("FAILED", ZtDanger)
         else -> Pair("NOT PROTECTED", ZtTextFaint)
     }
@@ -434,7 +451,7 @@ private fun StatusPill(state: VpnState) {
     val infiniteTransition = rememberInfiniteTransition(label = "dotPulse")
     val dotAlpha by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = if (isConnected || isConnecting) 0.35f else 1f,
+        targetValue = if (isConnected || isConnecting || isStopping) 0.35f else 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -453,7 +470,7 @@ private fun StatusPill(state: VpnState) {
         Box(
             modifier = Modifier
                 .size(6.dp)
-                .scale(if (isConnected || isConnecting) dotAlpha else 1f)
+                .scale(if (isConnected || isConnecting || isStopping) dotAlpha else 1f)
                 .clip(CircleShape)
                 .background(dotColor)
         )
@@ -465,7 +482,7 @@ private fun StatusPill(state: VpnState) {
             fontSize = 10.5.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
-            color = if (isConnected) ZtSuccess else if (isConnecting) ZtAccent else if (isError) ZtDanger else ZtTextMuted
+            color = if (isConnected) ZtSuccess else if (isConnecting) ZtAccent else if (isStopping) ZtTextMuted else if (isError) ZtDanger else ZtTextMuted
         )
     }
 }

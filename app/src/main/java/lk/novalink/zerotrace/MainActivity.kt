@@ -396,6 +396,9 @@ class MainActivity : FragmentActivity() {
         val currentState = VpnTunnelManager.vpnState.value
         if (currentState is VpnState.Connected || currentState is VpnState.Connecting) {
             VpnTunnelManager.stopVpn(this)
+        } else if (currentState is VpnState.Stopping) {
+            // Already shutting down; ignore click to prevent race condition
+            return
         } else {
             if (selectedConfig == null) {
                 Toast.makeText(this, "Please add or paste an Xray config first", Toast.LENGTH_SHORT).show()

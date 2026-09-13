@@ -12,4 +12,5 @@
     <string name="status_disconnected">Disconnected</string>
     <string name="status_stopping">Stopping…</string>
     <string name="status_error">Connection Error</string>
+    <string name="widget_description">1-Tap Quick Connect toggle for ZeroTrace VPN</string>
 </resources>

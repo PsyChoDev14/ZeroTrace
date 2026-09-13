@@ -22,6 +22,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import lk.novalink.zerotrace.MainActivity
 import lk.novalink.zerotrace.R
 import lk.novalink.zerotrace.ZeroTraceApp
@@ -43,6 +44,7 @@ class ZeroTraceVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         createNotificationChannel()
     }
 
@@ -71,7 +73,7 @@ class ZeroTraceVpnService : VpnService() {
                 val primaryDns = settingsRepo?.primaryDns?.value ?: "1.1.1.1"
 
                 startVpnTunnel(bypassLan, primaryDns)
-                return START_STICKY
+                return START_NOT_STICKY
             }
 
             ACTION_STOP -> {
@@ -304,22 +306,32 @@ class ZeroTraceVpnService : VpnService() {
         }
     }
 
-    private fun stopVpnTunnel() {
+    fun stopVpnTunnel() {
         unregisterNetworkCallback()
         monitorJob?.cancel()
         monitorJob = null
-
-        // Stop native Xray and tun2socks
-        XrayCoreManager.stopEngine()
         lk.novalink.zerotrace.core.LiveAppTrafficManager.stopMonitoring()
 
+        // 1. Close TUN interface FIRST so any blocking native read on tunFd immediately unblocks
         try {
             vpnInterface?.close()
             vpnInterface = null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ZeroTraceVpnService", "Error closing vpnInterface", e)
         }
 
+        // 2. Stop native Xray and tun2socks in background coroutine with timeout so Main Thread never deadlocks
+        serviceScope.launch {
+            try {
+                withTimeoutOrNull(2500L) {
+                    XrayCoreManager.stopEngine()
+                }
+            } catch (e: Exception) {
+                Log.e("ZeroTraceVpnService", "Error stopping Xray engine", e)
+            }
+        }
+
+        // 3. Immediately reset speeds, notify state, remove notification, and stop service
         VpnTunnelManager.updateSpeed(0, 0)
         VpnTunnelManager.updateState(VpnState.Disconnected)
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -328,6 +340,9 @@ class ZeroTraceVpnService : VpnService() {
 
     override fun onDestroy() {
         stopVpnTunnel()
+        if (instance === this) {
+            instance = null
+        }
         super.onDestroy()
     }
 
@@ -388,6 +403,9 @@ class ZeroTraceVpnService : VpnService() {
     }
 
     companion object {
+        var instance: ZeroTraceVpnService? = null
+            private set
+
         const val ACTION_START = "lk.novalink.zerotrace.action.START_VPN"
         const val ACTION_STOP = "lk.novalink.zerotrace.action.STOP_VPN"
 

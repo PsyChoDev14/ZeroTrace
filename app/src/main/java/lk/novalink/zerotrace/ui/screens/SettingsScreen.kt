@@ -1,7 +1,12 @@
 package lk.novalink.zerotrace.ui.screens
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
+import lk.novalink.zerotrace.widget.ZeroTraceWidgetProvider
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -186,11 +191,12 @@ fun SettingsScreen(
     val showStealthCard = matches("stealth", "dpi", "bypass", "fragment", "tls", "packet", "utls", "browser", "fingerprint", "mux", "multiplexing", "cool", "sni", "engine", "firewall", "deep stealth", "speed")
 
     val showTileGuideCard = matches("tile", "quick settings", "notification", "panel", "status bar")
+    val showWidgetCard = matches("widget", "home screen", "desktop", "quick connect", "shortcut", "play")
     val showUpdatesCard = matches("update", "version", "download", "release", "check")
     val showTelegramCard = matches("telegram", "community", "support", "chat", "help")
     val showWhatsappCard = matches("whatsapp", "support", "chat", "novalink")
     val showDiagnosticsCard = matches("diagnostic", "log", "developer", "report", "debug", "error")
-    val showSupportSection = showTileGuideCard || showUpdatesCard || showTelegramCard || showWhatsappCard || showDiagnosticsCard
+    val showSupportSection = showTileGuideCard || showWidgetCard || showUpdatesCard || showTelegramCard || showWhatsappCard || showDiagnosticsCard
 
     val showAboutCard = matches("about", "version", "zerotrace", "nexaura", "nadun", "developer", "website")
     val showDangerZone = matches("danger", "reset", "clear", "logs", "cache", "factory", "defaults", "erase")
@@ -1035,6 +1041,51 @@ fun SettingsScreen(
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = "Open",
+                                tint = ZtTextFaint,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 1x1 Home Screen Quick Connect Widget
+                if (showWidgetCard) {
+                    SettingsCard(modifier = Modifier.clickable {
+                        val appWidgetManager = AppWidgetManager.getInstance(context)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && appWidgetManager.isRequestPinAppWidgetSupported) {
+                            val widgetComponent = ComponentName(context, ZeroTraceWidgetProvider::class.java)
+                            appWidgetManager.requestPinAppWidget(widgetComponent, null, null)
+                        } else {
+                            Toast.makeText(context, "Long-press your home screen and select Widgets > ZeroTrace", Toast.LENGTH_LONG).show()
+                        }
+                    }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PowerSettingsNew,
+                                contentDescription = "Home Screen Widget",
+                                tint = ZtSuccess,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Home Screen Quick Connect Widget",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    color = ZtText
+                                )
+                                Text(
+                                    text = "1-tap circular widget on your home screen",
+                                    fontSize = 11.5.sp,
+                                    color = ZtTextMuted
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = "Pin Widget",
                                 tint = ZtTextFaint,
                                 modifier = Modifier.size(18.dp)
                             )
