@@ -41,11 +41,13 @@ import lk.novalink.zerotrace.data.model.UpdateState
 import lk.novalink.zerotrace.ui.components.BottomNav
 import lk.novalink.zerotrace.ui.components.NavTab
 import lk.novalink.zerotrace.ui.components.UpdateDialog
+import lk.novalink.zerotrace.ui.screens.AccountScreen
 import lk.novalink.zerotrace.ui.screens.AddConfigDialog
 import lk.novalink.zerotrace.ui.screens.BiometricLockScreen
 import lk.novalink.zerotrace.ui.screens.ConfigsScreen
 import lk.novalink.zerotrace.ui.screens.EditConfigDialog
 import lk.novalink.zerotrace.ui.screens.HomeScreen
+import lk.novalink.zerotrace.ui.screens.LoginScreen
 import lk.novalink.zerotrace.ui.screens.OnboardingScreen
 import lk.novalink.zerotrace.ui.screens.SettingsScreen
 import lk.novalink.zerotrace.ui.screens.StatisticsScreen
@@ -95,6 +97,7 @@ class MainActivity : FragmentActivity() {
         val app = application as ZeroTraceApp
         val configRepo = app.configRepository
         val settingsRepo = app.settingsRepository
+        val authRepo = app.authRepository
 
         setContent {
             ZeroTraceTheme {
@@ -134,11 +137,13 @@ class MainActivity : FragmentActivity() {
                         val biometricEnabled by settingsRepo.biometricLockEnabled.collectAsState()
 
                         val updateState by UpdateManager.updateState.collectAsState()
+                        val authState by authRepo.state.collectAsState()
 
                         var isAppUnlocked by remember { mutableStateOf(!settingsRepo.biometricLockEnabled.value) }
                         var biometricError by remember { mutableStateOf<String?>(null) }
                         var currentTab by remember { mutableStateOf(NavTab.HOME) }
                         var isViewingSplitTunneling by remember { mutableStateOf(false) }
+                        var isViewingAccount by remember { mutableStateOf(false) }
                         var showAddDialog by remember { mutableStateOf(false) }
                         var configToEdit by remember { mutableStateOf<ProxyConfig?>(null) }
 
@@ -212,6 +217,30 @@ class MainActivity : FragmentActivity() {
                                 onUnlockClick = { requestBiometricUnlock() },
                                 errorMessage = biometricError
                             )
+                        } else if (authState.checkingSession) {
+                            // Reading the secure store; keep the background so the gate doesn't flash the main UI.
+                            Box(modifier = Modifier.fillMaxSize())
+                        } else if (authState.showLoginGate) {
+                            LoginScreen(
+                                loading = authState.loading,
+                                error = authState.error,
+                                onLogin = { authRepo.startLogin(this@MainActivity) },
+                                onCancel = { authRepo.cancelLogin() },
+                                onOffline = { authRepo.continueOffline() },
+                                showFooter = true
+                            )
+                        } else if (isViewingAccount) {
+                            AccountScreen(
+                                auth = authState,
+                                onBack = { isViewingAccount = false },
+                                onLogin = { authRepo.startLogin(this@MainActivity) },
+                                onCancelLogin = { authRepo.cancelLogin() },
+                                onRefresh = { authRepo.refresh() },
+                                onLogout = {
+                                    authRepo.logout()
+                                    isViewingAccount = false
+                                }
+                            )
                         } else if (isViewingSplitTunneling) {
                             lk.novalink.zerotrace.ui.screens.SplitTunnelingScreen(
                                 currentMode = splitTunnelMode,
@@ -241,7 +270,9 @@ class MainActivity : FragmentActivity() {
                                             onNavigateToSettings = { currentTab = NavTab.SETTINGS },
                                             onAddConfigClick = { showAddDialog = true },
                                             onEditActiveConfig = { selectedConfig?.let { configToEdit = it } },
-                                            onPingTest = { handlePing(it) }
+                                            onPingTest = { handlePing(it) },
+                                            account = authState.profile,
+                                            onOpenAccount = { isViewingAccount = true }
                                         )
 
                                         NavTab.CONFIGS -> ConfigsScreen(
@@ -435,6 +466,12 @@ class MainActivity : FragmentActivity() {
 
     private fun handleConfigIntent(intent: Intent?) {
         if (intent == null) return
+        // NetchSuite sign-in redirect (netchvpn://auth/callback) is not a proxy config.
+        val data = intent.data
+        if (data != null && data.scheme == "netchvpn") {
+            (application as? ZeroTraceApp)?.authRepository?.handleCallback(data)
+            return
+        }
         val rawUri = intent.dataString ?: intent.getStringExtra("config") ?: ""
         if (rawUri.isNotBlank()) {
             val parsed = ConfigParser.parseSingle(rawUri)

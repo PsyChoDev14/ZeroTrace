@@ -13,6 +13,9 @@ class ZeroTraceApp : Application() {
     lateinit var settingsRepository: SettingsRepository
         private set
 
+    lateinit var authRepository: lk.novalink.zerotrace.data.repository.AuthRepository
+        private set
+
     lateinit var trafficStatsRepository: TrafficStatsRepository
         private set
 
@@ -24,6 +27,7 @@ class ZeroTraceApp : Application() {
         instance = this
         configRepository = ConfigRepository(this)
         settingsRepository = SettingsRepository(this)
+        authRepository = lk.novalink.zerotrace.data.repository.AuthRepository(this, configRepository)
         trafficStatsRepository = TrafficStatsRepository(this)
         installedAppsRepository = lk.novalink.zerotrace.data.repository.InstalledAppsRepository(this)
 

@@ -113,6 +113,20 @@ class ConfigRepository(context: Context) {
         return _configs.value.find { it.id == selectedId }
     }
 
+    /**
+     * Makes the synced (subscriptionId != null) configs exactly match this account's active
+     * subscriptions: another account's configs, expired plans and cancelled plans are dropped.
+     * Manual configs are never touched. [activeIds] must cover every active subscription, including
+     * ones whose link failed to parse, so a parse failure can't delete an existing config.
+     */
+    fun syncSubscriptions(activeIds: Set<Long>, parsed: List<ProxyConfig>) {
+        val next = planSync(_configs.value, activeIds, parsed)
+        saveConfigsInternal(next)
+        if (next.none { it.id == _selectedConfigId.value }) {
+            setSelectedConfig(next.firstOrNull()?.id)
+        }
+    }
+
     fun clearAllConfigs() {
         saveConfigsInternal(emptyList())
         setSelectedConfig(null)
@@ -125,6 +139,25 @@ class ConfigRepository(context: Context) {
     }
 
     companion object {
+        /** Pure so the account-switch / expiry rules can be unit-tested. */
+        fun planSync(current: List<ProxyConfig>, activeIds: Set<Long>, parsed: List<ProxyConfig>): List<ProxyConfig> {
+            val next = current
+                .filter { cfg -> cfg.subscriptionId?.let { it in activeIds } ?: true }
+                .toMutableList()
+            for (fresh in parsed.reversed()) {
+                val subId = fresh.subscriptionId ?: continue
+                val idx = next.indexOfFirst { it.subscriptionId == subId }
+                if (idx >= 0) {
+                    // Update in place, keeping identity and what the user already measured.
+                    val old = next[idx]
+                    next[idx] = fresh.copy(id = old.id, pingMs = old.pingMs, createdAt = old.createdAt)
+                } else {
+                    next.add(0, fresh)
+                }
+            }
+            return next
+        }
+
         private const val PREFS_NAME = "zerotrace_configs_pref"
         private const val KEY_CONFIGS = "saved_configs_json"
         private const val KEY_SELECTED_ID = "selected_config_id"

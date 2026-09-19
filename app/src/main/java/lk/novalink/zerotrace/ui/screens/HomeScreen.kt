@@ -92,6 +92,8 @@ fun HomeScreen(
     onAddConfigClick: () -> Unit,
     onEditActiveConfig: (() -> Unit)? = null,
     onPingTest: (ProxyConfig) -> Unit,
+    account: lk.novalink.zerotrace.data.model.UserProfile? = null,
+    onOpenAccount: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -133,7 +135,17 @@ fun HomeScreen(
         ) {
             ZeroTraceWordmark(showIcon = true)
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                // Account: profile picture when signed in, person icon when signed out.
+                lk.novalink.zerotrace.ui.components.AccountAvatar(
+                    name = account?.name,
+                    url = account?.avatarUrl,
+                    size = 36.dp,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable { onOpenAccount() }
+                )
+
                 IconButton(
                     onClick = onAddConfigClick,
                     modifier = Modifier

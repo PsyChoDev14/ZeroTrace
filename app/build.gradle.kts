@@ -107,6 +107,9 @@ dependencies {
     implementation("com.google.guava:guava:31.1-android")
     implementation("com.google.zxing:core:3.5.3")
 
+    // Keystore-backed encrypted storage for the NetchSuite sign-in tokens
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     // Biometric Security (Fingerprint & Face ID)
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("androidx.fragment:fragment-ktx:1.7.1")

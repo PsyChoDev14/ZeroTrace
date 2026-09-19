@@ -26,3 +26,7 @@
 -dontwarn com.google.zxing.**
 -dontwarn javax.annotation.**
 -dontwarn sun.misc.**
+
+# Tink (pulled in by androidx.security:security-crypto) references annotation-only classes
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.crypto.tink.**

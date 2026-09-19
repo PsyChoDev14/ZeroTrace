@@ -24,7 +24,9 @@ data class ProxyConfig(
     val cipher: String = "auto",     // Shadowsocks method or VMess cipher
     val rawConfig: String = "",      // Original URI or custom JSON
     val pingMs: Long = -1,           // Latency in milliseconds (-1 = untested)
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    // Set when synced from a NetchSuite account subscription; null for manually added configs.
+    val subscriptionId: Long? = null
 ) {
     val displaySubtitle: String
         get() = "$server:$port • ${network.uppercase()}" + if (security.isNotEmpty() && security != "none") " • ${security.uppercase()}" else ""

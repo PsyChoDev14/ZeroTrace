@@ -109,23 +109,25 @@ fun ServerCard(
 
                 // Node Details (gets maximum horizontal width)
                 Column(modifier = Modifier.weight(1f)) {
+                    // Name gets its own line (up to two) so long provider names aren't squeezed by the badges.
+                    Text(
+                        text = config.name,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = ZtText,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = config.name,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                            fontSize = 15.sp,
-                            color = ZtText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
                         ProtocolBadge(protocol = config.protocol)
+                        if (config.subscriptionId != null) SyncedBadge()
                     }
 
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
 
                     Text(
                         text = config.displaySubtitle,
@@ -318,6 +320,24 @@ fun ProtocolBadge(protocol: ProxyProtocol) {
             fontSize = 8.5.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
+            letterSpacing = 0.4.sp
+        )
+    }
+}
+
+@Composable
+fun SyncedBadge() {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color(0xFF00E5FF).copy(alpha = 0.12f))
+            .padding(horizontal = 5.dp, vertical = 1.5.dp)
+    ) {
+        Text(
+            text = "SYNCED",
+            fontSize = 8.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF00E5FF),
             letterSpacing = 0.4.sp
         )
     }
