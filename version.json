@@ -1,9 +1,9 @@
 {
-  "versionCode": 23,
-  "versionName": "1.3.1",
-  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.3.1/ZeroTrace-v1.3.1-arm64-v8a.apk",
-  "changelog": "• 1x1 Quick Connect Home Screen Widget: 1-tap circular widget on your home screen with real-time tunnel state sync\n• Critical VPN Teardown Fix: Fixed disconnect deadlock ensuring instant, freeze-free tunnel termination\n• Settings Screen Integration: 1-tap widget pin shortcut in Settings > Updates & Support",
+  "versionCode": 24,
+  "versionName": "1.4.0",
+  "downloadUrl": "https://github.com/PsyChoDev14/ZeroTrace/releases/download/v1.4.0/ZeroTrace-v1.4.0-arm64.apk",
+  "changelog": "\u2022 NetchSuite Sign-In: New login page with Continue with Google - sign in to sync your subscriptions as servers automatically\n\u2022 Optional Account: Use this device offline keeps ZeroTrace fully usable without signing in, and any Xray config from any provider still works as before\n\u2022 Smart Sync: Only active subscriptions become servers; switching accounts replaces the previous account's servers and expired plans are removed. Manually added servers are never touched\n\u2022 Account Screen: Profile picture, name and LKR balance, opened from the round account button on the Home screen\n\u2022 Secure Sessions: Sign-in tokens are kept in Android Keystore-backed encrypted storage\n\u2022 Cleaner Server Cards: Full server names and a clear Synced badge",
   "forceUpdate": false,
-  "releaseDate": "2026-09-13",
+  "releaseDate": "2026-09-19",
   "minSupportedVersion": 1
 }
