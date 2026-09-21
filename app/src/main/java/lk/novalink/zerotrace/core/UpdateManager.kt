@@ -161,18 +161,20 @@ object UpdateManager {
                 val body = root.get("body")?.asString ?: "Bug fixes and performance improvements."
                 val assets = root.getAsJsonArray("assets")
 
-                var downloadUrl = ""
+                // One APK per CPU ABI; downloadUrl stays the arm64 build (or first APK) for older clients.
+                val urlsByAbi = mutableMapOf<String, String>()
+                var firstApk = ""
                 if (assets != null) {
                     for (element in assets) {
                         val assetObj = element.asJsonObject
                         val name = assetObj.get("name")?.asString ?: ""
                         val browserUrl = assetObj.get("browser_download_url")?.asString ?: ""
-                        if (name.contains("arm64", ignoreCase = true) || name.endsWith(".apk", ignoreCase = true)) {
-                            downloadUrl = browserUrl
-                            break
-                        }
+                        if (browserUrl.isEmpty() || !name.endsWith(".apk", ignoreCase = true)) continue
+                        if (firstApk.isEmpty()) firstApk = browserUrl
+                        AppUpdateInfo.abiForAssetName(name)?.let { urlsByAbi.putIfAbsent(it, browserUrl) }
                     }
                 }
+                val downloadUrl = urlsByAbi["arm64-v8a"] ?: firstApk
 
                 if (tagName.isNotEmpty() && downloadUrl.isNotEmpty()) {
                     AppUpdateInfo(
@@ -181,7 +183,8 @@ object UpdateManager {
                         downloadUrl = downloadUrl,
                         changelog = body,
                         forceUpdate = false,
-                        releaseDate = ""
+                        releaseDate = "",
+                        downloadUrls = urlsByAbi.ifEmpty { null }
                     )
                 } else null
             } else null
@@ -284,7 +287,7 @@ object UpdateManager {
                 totalBytes = -1L
             )
 
-            val url = URL(updateInfo.downloadUrl)
+            val url = URL(updateInfo.urlFor(Build.SUPPORTED_ABIS.toList()))
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 connectTimeout = 15000
                 readTimeout = 30000

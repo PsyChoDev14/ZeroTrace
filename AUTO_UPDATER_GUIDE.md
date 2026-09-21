@@ -20,6 +20,7 @@ Simply run this command in your terminal from the project root:
 3. **Prompts you for the changelog bullet points** to display in the user's update popup.
 4. **Automatically updates `app/build.gradle.kts`** with the new `versionCode` and `versionName`.
 5. **Automatically generates/updates `version.json`** with the correct download URL.
+   - Every release ships **two APKs**: `-arm64.apk` and `-armeabi-v7a.apk`. 32-bit phones (e.g. Samsung Galaxy M02/A02) can't install the arm64 build ("App not installed"). `version.json` lists both under `downloadUrls` (ABI → URL); `downloadUrl` stays the arm64 URL for older app versions, and the app picks the one matching its CPU.
 6. **Compiles the APK** into `dist/ZeroTrace-v{VERSION}-arm64.apk`.
 7. **Creates a Git commit & Git tag** (`v1.0.1`).
 8. If GitHub CLI (`gh`) is installed, it **creates the GitHub Release and uploads the APK automatically**.

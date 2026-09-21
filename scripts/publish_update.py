@@ -40,6 +40,11 @@ TOKEN_FILE = PROJECT_ROOT / ".github_token"
 GLOBAL_TOKEN_FILE = Path.home() / ".zerotrace_github_token"
 DEFAULT_GITHUB_REPO = "PsyChoDev14/ZeroTrace"
 
+# One APK per CPU ABI (key = Build.SUPPORTED_ABIS value, value = suffix in the published file name).
+# A 32-bit phone such as the Galaxy M02/A02 cannot install the arm64 build ("App not installed"),
+# so every release must ship both. arm64 keeps the old "-arm64.apk" name that older app versions expect.
+ABI_BUILDS = {"arm64-v8a": "arm64", "armeabi-v7a": "armeabi-v7a"}
+
 def print_banner():
     print(f"{CYAN}{BOLD}")
     print("╔═════════════════════════════════════════════════════════════════════════╗")
@@ -84,13 +89,17 @@ def update_gradle_version(new_code, new_name):
     content = re.sub(r'versionName\s*=\s*["\'][^"\']+["\']', f'versionName = "{new_name}"', content)
     GRADLE_FILE.write_text(content, encoding="utf-8")
 
-def update_version_json(new_code, new_name, changelog, download_url, force_update):
-    """Generates and writes the updated version.json."""
+def update_version_json(new_code, new_name, changelog, download_urls, force_update):
+    """Generates and writes the updated version.json.
+
+    downloadUrl stays the arm64 build for app versions that predate per-ABI downloads;
+    newer apps read downloadUrls and pick the APK matching their CPU."""
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     data = {
         "versionCode": new_code,
         "versionName": new_name,
-        "downloadUrl": download_url,
+        "downloadUrl": download_urls["arm64-v8a"],
+        "downloadUrls": download_urls,
         "changelog": changelog,
         "forceUpdate": force_update,
         "releaseDate": today,
@@ -246,9 +255,12 @@ def main():
     # Force Update Check
     force_up = input("Force all users to update to this version? (y/N): ").strip().lower() == 'y'
 
-    # Download URL for the APK
-    apk_filename = f"ZeroTrace-{tag_name}-arm64.apk"
-    download_url = f"https://github.com/{github_repo}/releases/download/{tag_name}/{apk_filename}"
+    # Download URLs for the APKs (one per CPU ABI)
+    apk_filenames = {abi: f"ZeroTrace-{tag_name}-{suffix}.apk" for abi, suffix in ABI_BUILDS.items()}
+    download_urls = {
+        abi: f"https://github.com/{github_repo}/releases/download/{tag_name}/{name}"
+        for abi, name in apk_filenames.items()
+    }
 
     # 1. Update Gradle version
     print(f"\n[1/6] ✏️  Updating {GRADLE_FILE.name}...")
@@ -257,7 +269,7 @@ def main():
 
     # 2. Update version.json
     print(f"\n[2/6] 📄 Updating {VERSION_JSON_FILE.name}...")
-    update_version_json(new_code, new_name, changelog_str, download_url, force_up)
+    update_version_json(new_code, new_name, changelog_str, download_urls, force_up)
     print(f"      {GREEN}Updated version.json successfully.{RESET}")
 
     # 3. Build APK
@@ -265,17 +277,17 @@ def main():
     DIST_DIR.mkdir(exist_ok=True)
     run_cmd("./gradlew --no-daemon assembleRelease")
 
-    # Copy output APK to dist/
-    src_apk = PROJECT_ROOT / "app" / "build" / "outputs" / "apk" / "release" / "app-arm64-v8a-release.apk"
-    dest_apk = DIST_DIR / apk_filename
-
-    if src_apk.exists():
+    # Copy every ABI's APK to dist/
+    dest_apks = []
+    for abi, filename in apk_filenames.items():
+        src_apk = PROJECT_ROOT / "app" / "build" / "outputs" / "apk" / "release" / f"app-{abi}-release.apk"
+        dest_apk = DIST_DIR / filename
+        if not src_apk.exists():
+            print(f"{RED}Error: Output APK not found at {src_apk}{RESET}")
+            sys.exit(1)
         shutil.copyfile(src_apk, dest_apk)
-        apk_size_mb = dest_apk.stat().st_size / (1024 * 1024)
-        print(f"      {GREEN}Built APK: {dest_apk.name} ({apk_size_mb:.1f} MB){RESET}")
-    else:
-        print(f"{RED}Error: Output APK not found at {src_apk}{RESET}")
-        sys.exit(1)
+        print(f"      {GREEN}Built APK ({abi}): {dest_apk.name} ({dest_apk.stat().st_size / (1024 * 1024):.1f} MB){RESET}")
+        dest_apks.append(dest_apk)
 
     # 4. Git Automation
     print(f"\n[4/6] 🐙 Git Staging, Commit & Tag...")
@@ -325,13 +337,14 @@ def main():
             release_html_url = release_data.get("html_url", "")
             print(f"      {GREEN}Created GitHub Release: {release_html_url}{RESET}")
 
-            # Upload APK Binary Asset
+            # Upload every APK (arm64 first: older apps take the first .apk asset)
             if upload_url:
-                ok, asset_url = upload_github_release_asset(upload_url, dest_apk, token)
-                if ok:
-                    print(f"      {GREEN}Successfully uploaded {dest_apk.name} to GitHub Releases!{RESET}")
-                else:
-                    print(f"      {RED}Asset upload notice: {asset_url}{RESET}")
+                for dest_apk in dest_apks:
+                    ok, asset_url = upload_github_release_asset(upload_url, dest_apk, token)
+                    if ok:
+                        print(f"      {GREEN}Successfully uploaded {dest_apk.name} to GitHub Releases!{RESET}")
+                    else:
+                        print(f"      {RED}Asset upload FAILED for {dest_apk.name}: {asset_url}{RESET}")
         else:
             print(f"      {YELLOW}Note on GitHub Release creation: status={status}{RESET}")
             # If release already exists or needs manual push
@@ -343,8 +356,9 @@ def main():
     print(f"\n[6/6] 🎉 {BOLD}{GREEN}ZERO-TOUCH RELEASE COMPLETE!{RESET}")
     print("═" * 70)
     print(f"📦 Version: {BOLD}{tag_name}{RESET} (versionCode: {BOLD}{new_code}{RESET})")
-    print(f"📁 Local APK: {BOLD}{dest_apk}{RESET}")
-    print(f"🔗 Public Download: {CYAN}{download_url}{RESET}")
+    for abi, dest in zip(apk_filenames, dest_apks):
+        print(f"📁 Local APK ({abi}): {BOLD}{dest}{RESET}")
+        print(f"🔗 Public Download ({abi}): {CYAN}{download_urls[abi]}{RESET}")
     print(f"📡 OTA Feed: {CYAN}https://raw.githubusercontent.com/{github_repo}/main/version.json{RESET}")
     print("═" * 70)
     print(f"{GREEN}All installed ZeroTrace devices will receive this update on next launch! 🚀{RESET}\n")
