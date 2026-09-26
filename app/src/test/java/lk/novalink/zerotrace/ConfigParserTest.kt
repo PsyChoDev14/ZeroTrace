@@ -2,6 +2,7 @@ package lk.novalink.zerotrace
 
 import lk.novalink.zerotrace.core.XrayConfigGenerator
 import lk.novalink.zerotrace.data.model.ProxyProtocol
+import lk.novalink.zerotrace.data.repository.ConfigRepository
 import lk.novalink.zerotrace.parser.ConfigParser
 import lk.novalink.zerotrace.parser.VlessParser
 import lk.novalink.zerotrace.parser.VmessParser
@@ -58,5 +59,37 @@ class ConfigParserTest {
         assertTrue(jsonOutput.contains("vless"))
         assertTrue(jsonOutput.contains("realitySettings"))
         assertTrue(jsonOutput.contains("test_pub_key_123"))
+    }
+
+    // Regression: "host:port/?query" (trailing slash before the query) made the port parse as
+    // "45535/", fail, and silently fall back to 443, so the tunnel dialed the wrong port.
+    @Test
+    fun testPortIsKeptWhenAPathSlashPrecedesTheQuery() {
+        val vless = ConfigParser.parseSingle(
+            "vless://a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d@node1.example.lk:45535/?encryption=none&security=tls&sni=api.zoom.us&type=tcp#Zoom%20Plan"
+        )!!
+        assertEquals("node1.example.lk", vless.server)
+        assertEquals(45535, vless.port)
+        assertEquals("api.zoom.us", vless.sni)
+
+        val trojan = ConfigParser.parseSingle("trojan://secret@node2.example.lk:8443/?sni=x.example.lk#T")!!
+        assertEquals(8443, trojan.port)
+
+        val plain = ConfigParser.parseSingle("vless://a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d@sg.example.lk:2053?security=tls#P")!!
+        assertEquals(2053, plain.port)
+    }
+
+    @Test
+    fun testRepairWrongPortFixesOnly443ConfigsWhoseLinkSaysOtherwise() {
+        val link = "vless://a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d@node1.example.lk:45535/?security=tls&sni=api.zoom.us#Z"
+        val good = ConfigParser.parseSingle(link)!!
+        // What v1.4.1 stored: same config but port 443.
+        val broken = good.copy(port = 443)
+        assertEquals(45535, ConfigRepository.repairWrongPort(broken).port)
+        // A port edited by hand (not 443) is never overwritten.
+        assertEquals(8443, ConfigRepository.repairWrongPort(good.copy(port = 8443)).port)
+        // A genuine 443 link stays 443.
+        val real443 = ConfigParser.parseSingle("vless://a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d@sg.example.lk:443/?security=tls#P")!!
+        assertEquals(443, ConfigRepository.repairWrongPort(real443).port)
     }
 }

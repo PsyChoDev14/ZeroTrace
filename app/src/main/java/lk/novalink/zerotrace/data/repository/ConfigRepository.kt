@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import lk.novalink.zerotrace.data.model.ProxyConfig
+import lk.novalink.zerotrace.parser.ConfigParser
 import lk.novalink.zerotrace.data.model.ProxyProtocol
 import java.util.UUID
 
@@ -33,6 +34,8 @@ class ConfigRepository(context: Context) {
             val loaded: MutableList<ProxyConfig> = gson.fromJson(json, type) ?: mutableListOf()
             // Clean up any old dummy sample if present
             loaded.removeAll { it.uuid == "11111111-2222-3333-4444-555555555555" || it.server == "sg.novalink.lk" }
+            // Repair configs saved by versions <= 1.4.1, which turned "host:port/?..." into port 443.
+            loaded.replaceAll { repairWrongPort(it) }
             loaded
         } else {
             mutableListOf()
@@ -139,6 +142,17 @@ class ConfigRepository(context: Context) {
     }
 
     companion object {
+        /**
+         * Versions <= 1.4.1 saved "vless://id@host:45535/?..." with port 443 (the "/" broke the port
+         * parse). If the stored port is 443 but the original link says otherwise, use the link's port.
+         * Only touches 443, so a port the user edited by hand is left alone.
+         */
+        fun repairWrongPort(cfg: ProxyConfig): ProxyConfig {
+            if (cfg.port != 443 || cfg.protocol !in setOf(ProxyProtocol.VLESS, ProxyProtocol.TROJAN)) return cfg
+            val fromLink = ConfigParser.parseSingle(cfg.rawConfig) ?: return cfg
+            return if (fromLink.server == cfg.server && fromLink.port != 443) cfg.copy(port = fromLink.port) else cfg
+        }
+
         /** Pure so the account-switch / expiry rules can be unit-tested. */
         fun planSync(current: List<ProxyConfig>, activeIds: Set<Long>, parsed: List<ProxyConfig>): List<ProxyConfig> {
             val next = current

@@ -68,6 +68,10 @@ object UriHelper {
                 u
             } else ""
 
+            // Drop any path after the authority ("host:port/?..." is common). Without this the port
+            // reads as "45535/", fails to parse and silently becomes 443.
+            raw = raw.substringBefore("/")
+
             // Extract host and port
             val colonIndex = raw.lastIndexOf(":")
             val host: String
